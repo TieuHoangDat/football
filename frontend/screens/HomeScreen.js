@@ -1,9 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Alert, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, FlatList, ActivityIndicator } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+import NewsItem from "../components/NewsItem";
 
 const HomeScreen = ({ navigation }) => {
   const [user, setUser] = useState(null);
+  const [news, setNews] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const getUser = async () => {
@@ -14,22 +19,43 @@ const HomeScreen = ({ navigation }) => {
         setUser({ email: "example@email.com" }); // Giả định lấy user từ token
       }
     };
-    getUser();
-  }, []);
 
-  const handleLogout = async () => {
-    await AsyncStorage.removeItem("token");
-    Alert.alert("Đã đăng xuất!");
-    navigation.replace("Login");
-  };
+    const fetchNews = async () => {
+      try {
+        const response = await fetch("http://localhost:5001/news");
+        const data = await response.json();
+        setNews(data);
+      } catch (error) {
+        console.error("Lỗi khi lấy tin tức:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getUser();
+    fetchNews();
+  }, []);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.welcomeText}>Chào mừng {user?.email}!</Text>
+      <Header title="Trang chủ" />
+      <View style={styles.content}>
+        <Text style={styles.welcomeText}>Tin tức bóng đá mới nhất</Text>
 
-      <TouchableOpacity style={styles.button} onPress={handleLogout}>
-        <Text style={styles.buttonText}>Đăng xuất</Text>
-      </TouchableOpacity>
+        {loading ? (
+          <ActivityIndicator size="large" color="#fff" />
+        ) : (
+          <FlatList
+            data={news}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item, index }) => (
+              <NewsItem id={item.id} title={item.title} create_at={item.create_at} image={item.image} isFirst={index === 0} />
+            )}
+          />
+
+        )}
+      </View>
+      <Footer />
     </View>
   );
 };
@@ -37,28 +63,17 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#121212",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: "#1A1A1A",
+  },
+  content: {
+    flex: 1,
     padding: 20,
   },
   welcomeText: {
     fontSize: 20,
     fontWeight: "bold",
     color: "#fff",
-    marginBottom: 20,
-  },
-  button: {
-    backgroundColor: "#E53935",
-    padding: 12,
-    borderRadius: 8,
-    width: "100%",
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16,
+    marginBottom: 10,
   },
 });
 

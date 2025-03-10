@@ -13,7 +13,16 @@ DB_PORT=3306
 
 ## Bước 2: Chạy backend express.js
 - Cài đặt node
+- Di chuyển vào backend: cd backend
 - Tải thư viện dùng lệnh: npm install
-- Chạy backend dùng lệnh: node index.js
+- Chạy backend dùng lệnh: npm run dev
 
 ## Bước 3: Chạy frontend react native expo
+### Để hiển thị trên web
+- Di chuyển vào frontend: cd frontend
+- npx expo start --web
+- Vào inspect trong trình duyệt chọn hiển thị trên điện thoại
+
+### Hiển thị trên android
+- npx expo start
+- Cài Expo Go và quét QR
