@@ -2,11 +2,11 @@ import React from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 
-const NewsItem = ({ id, title, image, create_at, isFirst }) => {
+const NewsItem = ({ id, title, content, image, create_at, isFirst }) => {
   const navigation = useNavigation();
 
   return (
-    <TouchableOpacity onPress={() => navigation.navigate("NewsDetail", { id, title, image, create_at })}>
+    <TouchableOpacity onPress={() => navigation.navigate("NewsDetail", { id, title, content, image, create_at })}>
       <View style={[styles.container, isFirst && styles.firstContainer]}>
         {isFirst ? (
           <>

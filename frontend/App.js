@@ -10,6 +10,7 @@ import MatchesScreen from "./screens/MatchesScreen";
 import StatsScreen from "./screens/StatsScreen";
 import AccountScreen from "./screens/AccountScreen";
 import NewsDetailScreen from "./screens/NewsDetailScreen";
+import CommentsScreen from "./screens/CommentsScreen";
 
 
 const Stack = createNativeStackNavigator();
@@ -45,6 +46,7 @@ export default function App() {
         <Stack.Screen name="Stats" component={StatsScreen} />
         <Stack.Screen name="Account" component={AccountScreen} />
         <Stack.Screen name="NewsDetail" component={NewsDetailScreen} />
+        <Stack.Screen name="Comments" component={CommentsScreen} />
 
       </Stack.Navigator>
     </NavigationContainer>

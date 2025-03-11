@@ -1,23 +1,35 @@
 import React from "react";
-import { View, Text, Image, StyleSheet, ScrollView } from "react-native";
-import Header from "../components/Header";
+import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import Footer from "../components/Footer";
 
-
 const NewsDetailScreen = ({ route }) => {
-  const { title, image, create_at } = route.params;
+  const { id, title, content, image, create_at } = route.params;
+  const navigation = useNavigation();
 
   return (
     <View style={styles.container}>
-      <Header title="Chi tiết tin tức" />
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.navigate("Home")}>
+          <Image source={require("../assets/arrow-left.png")} style={styles.icon} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Chi tiết tin tức</Text>
+        <TouchableOpacity onPress={() => navigation.navigate("Comments", { id, title, content, image, create_at })}>
+          <Image source={require("../assets/message.png")} style={styles.icon} />
+        </TouchableOpacity>
+
+      </View>
+
       <ScrollView contentContainerStyle={styles.content}>
         <Image source={{ uri: `http://localhost:5001/uploads/news/${image}` }} style={styles.image} />
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.time}>Ngày đăng: {new Date(create_at).toLocaleDateString()}</Text>
         <Text style={styles.body}>
-          Đây là nội dung chi tiết của bài báo. Nội dung có thể được tải từ API nếu cần thiết.
+          {content}
         </Text>
       </ScrollView>
+
       <Footer />
     </View>
   );
@@ -27,6 +39,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#1A1A1A",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#000",
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+  },
+  icon: {
+    width: 24,
+    height: 24,
+    tintColor: "#fff",
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#fff",
   },
   content: {
     padding: 20,
