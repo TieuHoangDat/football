@@ -3,14 +3,17 @@ import { View, ActivityIndicator } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import LoginScreen from "./screens/LoginScreen";
-import RegisterScreen from "./screens/RegisterScreen";
+import LoginScreen from "./screens/Auth/LoginScreen";
+import RegisterScreen from "./screens/Auth/RegisterScreen";
 import HomeScreen from "./screens/HomeScreen";
 import MatchesScreen from "./screens/MatchesScreen";
-import StatsScreen from "./screens/StatsScreen";
+import StatsScreen from "./screens/Stats/StatsScreen";
 import AccountScreen from "./screens/AccountScreen";
 import NewsDetailScreen from "./screens/NewsDetailScreen";
-import CommentsScreen from "./screens/CommentsScreen";
+import CommentsScreen from "./screens/News/CommentsScreen";
+import SearchScreen from "./screens/SearchScreen";
+import TeamDetailsScreen from "./screens/TeamDetailsScreen"; // Màn hình giới thiệu
+import PlayeretailsScreen from "./screens/Teams/PlayerDetailsScreen"; // Màn hình giới thiệu
 
 
 const Stack = createNativeStackNavigator();
@@ -47,6 +50,9 @@ export default function App() {
         <Stack.Screen name="Account" component={AccountScreen} />
         <Stack.Screen name="NewsDetail" component={NewsDetailScreen} />
         <Stack.Screen name="Comments" component={CommentsScreen} />
+        <Stack.Screen name="Search" component={SearchScreen} />
+        <Stack.Screen name="TeamDetails" component={TeamDetailsScreen} />
+        <Stack.Screen name="PlayerDetails" component={PlayeretailsScreen} />
 
       </Stack.Navigator>
     </NavigationContainer>

@@ -1,11 +1,16 @@
 import React from "react";
-import { View, Text, StyleSheet, Image } from "react-native";
+import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 
 const Header = () => {
+  const navigation = useNavigation();
+
   return (
     <View style={styles.header}>
       <Text style={styles.headerText}>Bóng đá</Text>
-      <Image source={require("../assets/search-normal.png")} style={styles.icon} />
+      <TouchableOpacity onPress={() => navigation.navigate("Search")}>
+        <Image source={require("../assets/search-normal.png")} style={styles.icon} />
+      </TouchableOpacity>
     </View>
   );
 };

@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import CommentItem from "../components/CommentItem";
+import CommentItem from "../../components/CommentItem";
+import Constants from "expo-constants";
+
+const API_URL = Constants.expoConfig.extra.apiUrl;
 
 const CommentsScreen = ({ route }) => {
   const navigation = useNavigation();
@@ -10,7 +13,7 @@ const CommentsScreen = ({ route }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`http://localhost:5001/comments/${id}`)
+    fetch(`${API_URL}/comments/${id}`)
       .then((res) => res.json())
       .then((data) => {
         setComments(data);
@@ -35,7 +38,7 @@ const CommentsScreen = ({ route }) => {
 
       {/* Hiển thị bài viết */}
       <View style={styles.newsContainer}>
-        <Image source={{ uri: `http://localhost:5001/uploads/news/${image}` }} style={styles.image} />
+        <Image source={{ uri: `${API_URL}/uploads/news/${image}` }} style={styles.image} />
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.time}>Ngày đăng: {new Date(create_at).toLocaleDateString()}</Text>
       </View>

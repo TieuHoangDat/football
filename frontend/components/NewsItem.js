@@ -1,6 +1,9 @@
 import React from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import Constants from "expo-constants";
+
+const API_URL = Constants.expoConfig.extra.apiUrl;
 
 const NewsItem = ({ id, title, content, image, create_at, isFirst }) => {
   const navigation = useNavigation();
@@ -10,7 +13,7 @@ const NewsItem = ({ id, title, content, image, create_at, isFirst }) => {
       <View style={[styles.container, isFirst && styles.firstContainer]}>
         {isFirst ? (
           <>
-            <Image source={{ uri: `http://localhost:5001/uploads/news/${image}` }} style={styles.firstImage} />
+            <Image source={{ uri: `${API_URL}/uploads/news/${image}` }} style={styles.firstImage} />
             <Text style={styles.firstTitle}>{title}</Text>
             <View style={styles.row}>
               <Text style={styles.time}>{new Date(create_at).toLocaleDateString()}</Text>
@@ -21,7 +24,7 @@ const NewsItem = ({ id, title, content, image, create_at, isFirst }) => {
           <>
             <View style={styles.row}>
               <Text style={styles.title}>{title}</Text>
-              <Image source={{ uri: `http://localhost:5001/uploads/news/${image}` }} style={styles.image} />
+              <Image source={{ uri: `${API_URL}/uploads/news/${image}` }} style={styles.image} />
             </View>
             <View style={styles.row}>
               <Text style={styles.time}>{new Date(create_at).toLocaleDateString()}</Text>

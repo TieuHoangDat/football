@@ -2,6 +2,9 @@ import React from "react";
 import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import Footer from "../components/Footer";
+import Constants from "expo-constants";
+
+const API_URL = Constants.expoConfig.extra.apiUrl;
 
 const NewsDetailScreen = ({ route }) => {
   const { id, title, content, image, create_at } = route.params;
@@ -22,7 +25,7 @@ const NewsDetailScreen = ({ route }) => {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Image source={{ uri: `http://localhost:5001/uploads/news/${image}` }} style={styles.image} />
+        <Image source={{ uri: `${API_URL}/uploads/news/${image}` }} style={styles.image} />
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.time}>Ngày đăng: {new Date(create_at).toLocaleDateString()}</Text>
         <Text style={styles.body}>

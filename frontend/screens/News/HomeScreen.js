@@ -4,6 +4,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import NewsItem from "../components/NewsItem";
+import Constants from "expo-constants";
+
+const API_URL = Constants.expoConfig.extra.apiUrl;
 
 const HomeScreen = ({ navigation }) => {
   const [user, setUser] = useState(null);
@@ -22,7 +25,7 @@ const HomeScreen = ({ navigation }) => {
 
     const fetchNews = async () => {
       try {
-        const response = await fetch("http://localhost:5001/news");
+        const response = await fetch(`${API_URL}/news`);
         const data = await response.json();
         setNews(data);
       } catch (error) {
