@@ -29,7 +29,7 @@ const PlayerDetailsScreen = () => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Image source={require("../assets/arrow-left.png")} style={styles.icon} />
+          <Image source={require("../../assets/arrow-left.png")} style={styles.icon} />
         </TouchableOpacity>
       </View>
 
@@ -45,7 +45,7 @@ const PlayerDetailsScreen = () => {
           </View>
 
           <View style={styles.followerContainer}>
-            <Image source={require("../assets/heart.png")} style={styles.heartIcon} />
+            <Image source={require("../../assets/heart.png")} style={styles.heartIcon} />
             <View style={styles.column1}>
               <Text style={styles.label}>2,9M</Text>
               <Text style={styles.label}>Người theo dõi</Text>

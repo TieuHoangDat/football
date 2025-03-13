@@ -5,14 +5,14 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import LoginScreen from "./screens/Auth/LoginScreen";
 import RegisterScreen from "./screens/Auth/RegisterScreen";
-import HomeScreen from "./screens/HomeScreen";
-import MatchesScreen from "./screens/MatchesScreen";
+import HomeScreen from "./screens/News/HomeScreen";
+import MatchesScreen from "./screens/Matches/MatchesScreen";
 import StatsScreen from "./screens/Stats/StatsScreen";
 import AccountScreen from "./screens/AccountScreen";
-import NewsDetailScreen from "./screens/NewsDetailScreen";
+import NewsDetailScreen from "./screens/News/NewsDetailScreen";
 import CommentsScreen from "./screens/News/CommentsScreen";
 import SearchScreen from "./screens/SearchScreen";
-import TeamDetailsScreen from "./screens/TeamDetailsScreen"; // Màn hình giới thiệu
+import TeamDetailsScreen from "./screens/Teams/TeamDetailsScreen"; // Màn hình giới thiệu
 import PlayeretailsScreen from "./screens/Teams/PlayerDetailsScreen"; // Màn hình giới thiệu
 
 

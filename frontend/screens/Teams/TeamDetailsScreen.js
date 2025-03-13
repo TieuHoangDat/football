@@ -3,9 +3,9 @@ import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import Constants from "expo-constants";
 
-import IntroductionTab from "../components/teams/IntroductionTab";
-import StatisticsTab from "../components/teams/StatisticsTab";
-import SquadTab from "../components/teams/SquadTab";
+import IntroductionTab from "../../components/teams/IntroductionTab";
+import StatisticsTab from "../../components/teams/StatisticsTab";
+import SquadTab from "../../components/teams/SquadTab";
 
 const API_URL = Constants.expoConfig.extra.apiUrl;
 
@@ -30,7 +30,7 @@ const TeamDetailsScreen = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Image source={require("../assets/arrow-left.png")} style={styles.icon} />
+          <Image source={require("../../assets/arrow-left.png")} style={styles.icon} />
         </TouchableOpacity>
       </View>
 
@@ -40,7 +40,7 @@ const TeamDetailsScreen = () => {
         <Text style={styles.teamCountry}>{team.country}</Text>
 
         <View style={styles.followersContainer}>
-          <Image source={require("../assets/heart.png")} style={styles.heartIcon} />
+          <Image source={require("../../assets/heart.png")} style={styles.heartIcon} />
           <Text style={styles.followers}>2,9M Người theo dõi</Text>
         </View>
       </View>

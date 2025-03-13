@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import Footer from "../components/Footer";
+import Footer from "../../components/Footer";
 import Constants from "expo-constants";
 
 const API_URL = Constants.expoConfig.extra.apiUrl;
@@ -15,11 +15,11 @@ const NewsDetailScreen = ({ route }) => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.navigate("Home")}>
-          <Image source={require("../assets/arrow-left.png")} style={styles.icon} />
+          <Image source={require("../../assets/arrow-left.png")} style={styles.icon} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Chi tiết tin tức</Text>
         <TouchableOpacity onPress={() => navigation.navigate("Comments", { id, title, content, image, create_at })}>
-          <Image source={require("../assets/message.png")} style={styles.icon} />
+          <Image source={require("../../assets/message.png")} style={styles.icon} />
         </TouchableOpacity>
 
       </View>

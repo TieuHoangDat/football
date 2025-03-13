@@ -30,7 +30,7 @@ const CommentsScreen = ({ route }) => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Image source={require("../assets/arrow-left.png")} style={styles.icon} />
+          <Image source={require("../../assets/arrow-left.png")} style={styles.icon} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Bình luận</Text>
         <View style={{ width: 24 }} />

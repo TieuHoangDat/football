@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, FlatList, ActivityIndicator } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import NewsItem from "../components/NewsItem";
+import Header from "../../components/Header";
+import Footer from "../../components/Footer";
+import NewsItem from "../../components/NewsItem";
 import Constants from "expo-constants";
 
 const API_URL = Constants.expoConfig.extra.apiUrl;
