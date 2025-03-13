@@ -18,8 +18,10 @@ DB_PORT=3306
 - Chạy backend dùng lệnh: npm run dev
 
 ## Bước 3: Chạy frontend react native expo
-### Để hiển thị trên web
 - Di chuyển vào frontend: cd frontend
+- Tải thư viện dùng lệnh: npm install
+
+### Để hiển thị trên web
 - npx expo start --web
 - Vào inspect trong trình duyệt chọn hiển thị dưới dạng giao diện mobile
 
