@@ -1,35 +1,70 @@
-# football
+# 🏆 Football App
 
-# Cách bước chạy
-## Bước 1 tạo database Mysql và kết nối với backend
-- Tạo db Mysql và tạo bảng users với câu lệnh sql trong file Script.sql
-- Tạo file .env trong thư mục backend
-- Thêm các thông tin vào file .env, ví dụ:
-DB_HOST=localhost
-DB_USER=user
-DB_PASSWORD=password
-DB_NAME=football
-DB_PORT=3306
+Ứng dụng quản lý và hiển thị thông tin bóng đá, sử dụng **Express.js** cho backend và **React Native Expo** cho frontend.
 
-- Chạy các lệnh trong Script.sql để tạo bảng và thêm dữ liệu
+---
 
-## Bước 2: Chạy backend express.js
-- Cài đặt node, npm nếu chưa có
-- Di chuyển vào backend: cd backend
-- Tải thư viện dùng lệnh: npm install
-- Chạy backend dùng lệnh: npm run dev
+## 🚀 Hướng dẫn cài đặt và chạy ứng dụng
 
-## Bước 3: Chạy frontend react native expo
-- Di chuyển vào frontend: cd frontend
-- Tải thư viện dùng lệnh: npm install
+### 💪 Bước 1: Thiết lập cơ sở dữ liệu MySQL
+1. **Tạo database MySQL** và bảng `users` bằng cách chạy lệnh SQL trong file [`Script.sql`](./backend/Script.sql).
+2. Tạo file `.env` trong thư mục `backend` và thêm thông tin kết nối database:
+   ```env
+   DB_HOST=localhost
+   DB_USER=user
+   DB_PASSWORD=password
+   DB_NAME=football
+   DB_PORT=3306
+   ```
+3. Chạy các lệnh trong `Script.sql` để khởi tạo database và dữ liệu mẫu.
 
-### Để hiển thị trên web
-- npx expo start --web
-- Vào inspect trong trình duyệt chọn hiển thị dưới dạng giao diện mobile
+---
 
-### Hiển thị trên android
-- npx expo start
-- Cài Expo Go và quét QR
+### 🔧 Bước 2: Chạy backend Express.js
+1. Cài đặt Node.js (phiên bản khuyến nghị: **LTS**).
+2. Điều hướng vào thư mục backend:
+   ```sh
+   cd backend
+   ```
+3. Cài đặt dependencies:
+   ```sh
+   npm install
+   ```
+4. Chạy server backend:
+   ```sh
+   npm run dev
+   ```
+   🚀 Server sẽ chạy ở `http://localhost:3000`.
+
+---
+
+### 📱 Bước 3: Chạy frontend React Native Expo
+1. Điều hướng vào thư mục frontend:
+   ```sh
+   cd frontend
+   ```
+2. Cài đặt dependencies:
+   ```sh
+   npm install
+   ```
+
+#### 🖥️ **Chạy trên Web**
+- Sử dụng lệnh:
+  ```sh
+  npx expo start --web
+  ```
+- Mở **DevTools** (`Inspect`) trên trình duyệt và chọn **hiển thị giao diện mobile**.
+
+#### 📱 **Chạy trên Android**
+- Sử dụng lệnh:
+  ```sh
+  npx expo start
+  ```
+- Cài đặt **Expo Go** trên điện thoại và quét mã QR để chạy ứng dụng.
+
+---
+
+
 
 
 # Các chức năng
