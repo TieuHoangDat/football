@@ -1,7 +1,9 @@
-import React from "react";
-import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import Constants from "expo-constants";
+import TeamItem from "../../components/TeamItem";
+
 
 const API_URL = Constants.expoConfig.extra.apiUrl;
 
@@ -24,6 +26,22 @@ const PlayerDetailsScreen = () => {
   const navigation = useNavigation();
   const { player } = route.params;
 
+  const [teams, setTeams] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`${API_URL}/teams/player/${player.id}`)
+      .then((response) => response.json())
+      .then((data) => {
+        setTeams(data);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Lỗi khi lấy danh sách đội bóng:", error);
+        setLoading(false);
+      });
+  }, [player.id]);
+
   return (
     <ScrollView style={styles.container}>
       {/* Header */}
@@ -40,8 +58,13 @@ const PlayerDetailsScreen = () => {
           <Text style={styles.lastName}>{player.last_name}</Text>
 
           <View style={styles.teamInfo}>
-            <Image source={{ uri: `${API_URL}/uploads/teams/${player.team_logo}` }} style={styles.teamLogo} />
-            <Text style={styles.teamName}>{player.team_name}</Text>
+            <Image 
+              source={{ uri: `${API_URL}/uploads/teams/${teams.length > 0 ? teams[0].image_url : player.team_logo}` }} 
+              style={styles.teamLogo} 
+            />
+            <Text style={styles.teamName}>
+              {teams.length > 0 ? teams[0].name : player.team_name}
+            </Text>
           </View>
 
           <View style={styles.followerContainer}>
@@ -96,6 +119,18 @@ const PlayerDetailsScreen = () => {
           </View>
         </View>
       </View>
+
+      {/* Danh sách các đội bóng */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Các đội bóng đã thi đấu</Text>
+        {loading ? (
+          <ActivityIndicator size="large" color="#fff" />
+        ) : teams.length === 0 ? (
+          <Text style={styles.noTeamText}>Chưa có thông tin đội bóng</Text>
+        ) : (
+          teams.map((team) => <TeamItem key={team.id} team={team} />)
+        )}
+      </View>
     </ScrollView>
   );
 };
@@ -121,8 +156,8 @@ const styles = StyleSheet.create({
   },
   firstName: { fontSize: 28, color: "#fff" },
   lastName: { fontSize: 28, fontWeight: "bold", color: "#fff" },
-  teamInfo: { flexDirection: "row", alignItems: "center", backgroundColor: "#2A2A2A", padding: 8, borderRadius: 8, marginVertical: 10 },
-  teamLogo: { width: 24, height: 24, marginRight: 6 },
+  teamInfo: { flexDirection: "row", alignItems: "center", padding: 8, borderRadius: 8, marginVertical: 20 },
+  teamLogo: { width: 40, height: 40, marginRight: 6 },
   teamName: { fontSize: 16, color: "#fff" },
   followerContainer: { flexDirection: "row", alignItems: "center", marginTop: 5 },
   heartIcon: { width: 20, height: 20, tintColor: "#fff", marginRight: 5 },
@@ -130,18 +165,9 @@ const styles = StyleSheet.create({
   section: { paddingHorizontal: 16, marginTop: 15 },
   sectionTitle: { fontSize: 24, fontWeight: "bold", color: "#fff", marginBottom: 8 },
   overviewCard: { backgroundColor: "#222", borderRadius: 8, padding: 12 },
-  row: { 
-    flexDirection: "row", 
-    justifyContent: "space-between", 
-    marginBottom: 16,
-  },
-  column: {
-    flex: 1, 
-    alignItems: "center", // Căn giữa mỗi cột
-  },
-  column1: {
-    marginLeft: 10,
-  },
+  row: { flexDirection: "row", justifyContent: "space-between", marginBottom: 16 },
+  column: { flex: 1, alignItems: "center" },
+  column1: { marginLeft: 10 },
   label: { color: "#bbb", fontSize: 20 },
   value: { color: "#fff", fontSize: 20, fontWeight: "bold", marginTop: 4 },
 });

@@ -1,7 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, TextInput, FlatList, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import Constants from "expo-constants";
+import TeamItem from "../components/TeamItem";
+import PlayerItem from "../components/PlayerItem";
+import NewsItem from "../components/NewsSearchItem"; // Import component hiển thị tin tức
 
 const API_URL = Constants.expoConfig.extra.apiUrl;
 
@@ -10,12 +13,26 @@ const SearchScreen = () => {
   const [searchText, setSearchText] = useState("");
   const [teams, setTeams] = useState([]);
   const [players, setPlayers] = useState([]);
+  const [news, setNews] = useState([]); // Thêm state lưu danh sách tin tức
+
+  useEffect(() => {
+    if (searchText.trim().length === 0) {
+      setTeams([]);
+      setPlayers([]);
+      setNews([]);
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      handleSearch();
+    }, 300); // Debounce 300ms
+
+    return () => clearTimeout(timeoutId);
+  }, [searchText]);
 
   const handleSearch = async () => {
-    if (!searchText.trim()) return;
-
     try {
-      // Gửi yêu cầu tìm kiếm đội bóng
+      // Gọi API tìm kiếm đội bóng
       const teamResponse = await fetch(`${API_URL}/teams/search`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -24,7 +41,7 @@ const SearchScreen = () => {
       const teamData = await teamResponse.json();
       setTeams(teamData);
 
-      // Gửi yêu cầu tìm kiếm cầu thủ
+      // Gọi API tìm kiếm cầu thủ
       const playerResponse = await fetch(`${API_URL}/players/search`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -33,6 +50,14 @@ const SearchScreen = () => {
       const playerData = await playerResponse.json();
       setPlayers(playerData);
 
+      // Gọi API tìm kiếm tin tức
+      const newsResponse = await fetch(`${API_URL}/news/search`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keyword: searchText }),
+      });
+      const newsData = await newsResponse.json();
+      setNews(newsData);
     } catch (error) {
       console.error("Lỗi khi tìm kiếm:", error);
     }
@@ -40,7 +65,6 @@ const SearchScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header với ô tìm kiếm */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Image source={require("../assets/arrow-left.png")} style={styles.icon} />
@@ -48,45 +72,27 @@ const SearchScreen = () => {
         <View style={styles.searchBox}>
           <TextInput
             style={styles.input}
-            placeholder="Nhập từ khoá"
+            placeholder="Nhập từ khoá..."
             placeholderTextColor="#999"
             value={searchText}
-            onChangeText={setSearchText}
+            onChangeText={setSearchText} // Tự động tìm kiếm khi nhập
           />
-          <TouchableOpacity onPress={handleSearch}>
-            <Image source={require("../assets/send.png")} style={styles.sendIcon} />
-          </TouchableOpacity>
         </View>
       </View>
 
       <FlatList
         contentContainerStyle={styles.listContainer}
-        data={[{ title: "Đội bóng", data: teams }, { title: "Cầu thủ", data: players }]}
+        data={[
+          { title: "Đội bóng", data: teams, component: TeamItem },
+          { title: "Cầu thủ", data: players, component: PlayerItem },
+          { title: "Tin tức", data: news, component: NewsItem } // Thêm tin tức
+        ]}
         keyExtractor={(item, index) => index.toString()}
         renderItem={({ item }) => (
           <View>
-            {item.data.length > 0 && (
-              <Text style={styles.sectionTitle}>{item.title}</Text>
-            )}
+            {item.data.length > 0 && <Text style={styles.sectionTitle}>{item.title}</Text>}
             {item.data.map((dataItem) => (
-              <TouchableOpacity
-                key={dataItem.id}
-                style={styles.card}
-                onPress={() =>
-                  item.title === "Đội bóng"
-                    ? navigation.navigate("TeamDetails", { team: dataItem })
-                    : navigation.navigate("PlayerDetails", { player: dataItem })
-                }
-              >
-                <Image
-                  source={{ uri: `${API_URL}/uploads/${item.title === "Đội bóng" ? "teams" : "players"}/${dataItem.image_url}` }}
-                  style={styles.itemImage}
-                />
-                <View style={styles.itemInfo}>
-                  <Text style={styles.itemName}>{dataItem.name || `${dataItem.first_name} ${dataItem.last_name}`}</Text>
-                  <Text style={styles.itemSub}>{item.title === "Đội bóng" ? dataItem.country : dataItem.position}</Text>
-                </View>
-              </TouchableOpacity>
+              <item.component key={dataItem.id} {...(item.title === "Đội bóng" ? { team: dataItem } : item.title === "Cầu thủ" ? { player: dataItem } : { news: dataItem })} />
             ))}
           </View>
         )}
@@ -101,14 +107,8 @@ const styles = StyleSheet.create({
   icon: { width: 24, height: 24, tintColor: "#fff", marginRight: 10 },
   searchBox: { flex: 1, flexDirection: "row", alignItems: "center", borderRadius: 8, paddingHorizontal: 10 },
   input: { flex: 1, color: "#fff", fontSize: 16, paddingVertical: 10 },
-  sendIcon: { width: 24, height: 24, tintColor: "#fff" },
   listContainer: { paddingHorizontal: 16 },
   sectionTitle: { fontSize: 18, fontWeight: "bold", color: "#fff", marginVertical: 10 },
-  card: { flexDirection: "row", alignItems: "center", padding: 12, borderBottomWidth: 1, borderBottomColor: "#444" },
-  itemImage: { width: 50, height: 50, borderRadius: 25 },
-  itemInfo: { marginLeft: 10 },
-  itemName: { fontSize: 16, fontWeight: "bold", color: "#fff" },
-  itemSub: { color: "#bbb" },
 });
 
 export default SearchScreen;

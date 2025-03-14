@@ -91,6 +91,9 @@ CREATE TABLE team_players (
     PRIMARY KEY (team_id, player_id)
 );
 
+ALTER TABLE team_players ADD COLUMN is_current TINYINT(1) DEFAULT 0;
+
+
 INSERT INTO players (first_name, last_name, image_url, position, birth_date, nationality, height, weight, shirt_number) VALUES
 ('Cristiano', 'Ronaldo', 'ronaldo.png', 'Forward', '1985-02-05', 'Bồ Đào Nha', 1.87, 83.0, 7),
 ('Lionel', 'Messi', 'messi.png', 'Forward', '1987-06-24', 'Argentina', 1.70, 72.0, 10),

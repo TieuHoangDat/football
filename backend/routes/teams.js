@@ -29,4 +29,24 @@ router.post("/search", (req, res) => {
   });
 });
 
+// API lấy danh sách teams theo player_id
+router.get("/player/:playerId", (req, res) => {
+  const { playerId } = req.params;
+
+  const query = `
+    SELECT t.* FROM teams t
+    JOIN team_players tp ON t.id = tp.team_id
+    WHERE tp.player_id = ?
+    ORDER BY tp.is_current DESC, t.created_at DESC
+  `;
+
+  db.query(query, [playerId], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: "Lỗi khi lấy danh sách teams của cầu thủ" });
+    }
+    res.json(results);
+  });
+});
+
+
 module.exports = router;
