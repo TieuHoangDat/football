@@ -7,7 +7,7 @@
 ## 🚀 Hướng dẫn cài đặt và chạy ứng dụng
 
 ### 💪 Bước 1: Thiết lập cơ sở dữ liệu MySQL
-1. **Tạo database MySQL** bằng cách chạy lệnh SQL trong file [`Script.sql`](./Script.sql).
+1. **Tạo database MySQL** sau đó chạy lệnh SQL trong file [`Script.sql`](./Script.sql) để khởi tạo database và dữ liệu mẫu.
 2. Tạo file `.env` trong thư mục `backend` và thêm thông tin kết nối database:
    ```env
    DB_HOST=localhost
@@ -16,7 +16,6 @@
    DB_NAME=football
    DB_PORT=3306
    ```
-3. Chạy các lệnh trong `Script.sql` để khởi tạo database và dữ liệu mẫu.
 
 ---
 
