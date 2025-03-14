@@ -7,7 +7,7 @@
 ## 🚀 Hướng dẫn cài đặt và chạy ứng dụng
 
 ### 💪 Bước 1: Thiết lập cơ sở dữ liệu MySQL
-1. **Tạo database MySQL** và bảng `users` bằng cách chạy lệnh SQL trong file [`Script.sql`](./backend/Script.sql).
+1. **Tạo database MySQL** bằng cách chạy lệnh SQL trong file [`Script.sql`](./Script.sql).
 2. Tạo file `.env` trong thư mục `backend` và thêm thông tin kết nối database:
    ```env
    DB_HOST=localhost
@@ -34,7 +34,7 @@
    ```sh
    npm run dev
    ```
-   🚀 Server sẽ chạy ở `http://localhost:3000`.
+   🚀 Server sẽ chạy ở `http://localhost:5001`.
 
 ---
 
