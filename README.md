@@ -14,7 +14,7 @@ DB_PORT=3306
 - Chạy các lệnh trong Script.sql để tạo bảng và thêm dữ liệu
 
 ## Bước 2: Chạy backend express.js
-- Cài đặt node
+- Cài đặt node, npm nếu chưa có
 - Di chuyển vào backend: cd backend
 - Tải thư viện dùng lệnh: npm install
 - Chạy backend dùng lệnh: npm run dev
