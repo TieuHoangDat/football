@@ -5,6 +5,12 @@ CREATE TABLE users (
   password VARCHAR(255) NOT NULL
 );
 
+INSERT INTO users (name, email, password) VALUES
+('Nguyễn Văn A', 'nguyenvana@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG'), -- Mật khẩu: 123
+('Trần Thị B', 'tranthib@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG'),
+('Lê Văn C', 'levanc@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG'),
+('Phạm Thị D', 'phamthid@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG');
+
 
 CREATE TABLE news (
     id INT AUTO_INCREMENT PRIMARY KEY,

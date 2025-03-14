@@ -11,6 +11,8 @@ DB_PASSWORD=password
 DB_NAME=football
 DB_PORT=3306
 
+- Chạy các lệnh trong Script.sql để tạo bảng và thêm dữ liệu
+
 ## Bước 2: Chạy backend express.js
 - Cài đặt node
 - Di chuyển vào backend: cd backend
