@@ -14,6 +14,7 @@ const LoginScreen = ({ navigation }) => {
     try {
       const response = await axios.post(`${API_URL}/auth/login`, { email, password });
       await AsyncStorage.setItem("token", response.data.token);
+      await AsyncStorage.setItem("email", email);
       Alert.alert("Đăng nhập thành công!");
       navigation.replace("Home");
     } catch (error) {

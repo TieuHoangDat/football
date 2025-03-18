@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
+// import { useCallback } from "react";
 import CommentItem from "../../components/CommentItem";
 import Constants from "expo-constants";
 
@@ -12,7 +13,9 @@ const CommentsScreen = ({ route }) => {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+
+  const fetchComments = useCallback(() => {
+    setLoading(true);
     fetch(`${API_URL}/comments/${id}`)
       .then((res) => res.json())
       .then((data) => {
@@ -24,6 +27,12 @@ const CommentsScreen = ({ route }) => {
         setLoading(false);
       });
   }, [id]);
+  
+  useFocusEffect(
+    useCallback(() => {
+      fetchComments();
+    }, [fetchComments])
+  );
 
   return (
     <View style={styles.container}>
@@ -45,6 +54,14 @@ const CommentsScreen = ({ route }) => {
 
       {/* Khu vực bình luận */}
       <Text style={styles.commentTitle}>Bình luận</Text>
+      <TouchableOpacity
+        style={styles.addCommentButton}
+        onPress={() =>
+          navigation.navigate("AddCommentScreen", { id, title, content, image, create_at, refresh: fetchComments })
+        }
+      >
+        <Text style={styles.addCommentText}>Viết bình luận ...</Text>
+      </TouchableOpacity>
 
       {loading ? (
         <ActivityIndicator size="large" color="#fff" />
@@ -112,6 +129,24 @@ const styles = StyleSheet.create({
   },
   commentList: {
     paddingHorizontal: 10,
+  },
+  addCommentButton: {
+    backgroundColor: "#1a1a1a", // Màu nền xanh lá (hoặc chọn màu khác)
+    padding: 12,
+    margin: 10,
+    borderRadius: 8,
+    borderWidth: 1, // Thêm viền
+    borderColor: "#BBB8B8", // Màu viền đậm hơn
+    shadowColor: "#000", // Đổ bóng
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5, // Hiệu ứng nổi trên Android
+  },
+  
+  addCommentText: {
+    color: "#BBB8B8",
+    fontSize: 16,
   },
 });
 

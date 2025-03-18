@@ -11,6 +11,8 @@ import StatsScreen from "./screens/Stats/StatsScreen";
 import AccountScreen from "./screens/AccountScreen";
 import NewsDetailScreen from "./screens/News/NewsDetailScreen";
 import CommentsScreen from "./screens/News/CommentsScreen";
+import AddCommentScreen from "./screens/News/AddCommentScreen";
+import ReplyCommentScreen from "./screens/News/ReplyCommentScreen";
 import SearchScreen from "./screens/SearchScreen";
 import TeamDetailsScreen from "./screens/Teams/TeamDetailsScreen"; // Màn hình giới thiệu
 import PlayeretailsScreen from "./screens/Teams/PlayerDetailsScreen"; // Màn hình giới thiệu
@@ -50,6 +52,8 @@ export default function App() {
         <Stack.Screen name="Account" component={AccountScreen} />
         <Stack.Screen name="NewsDetail" component={NewsDetailScreen} />
         <Stack.Screen name="Comments" component={CommentsScreen} />
+        <Stack.Screen name="AddCommentScreen" component={AddCommentScreen} />
+        <Stack.Screen name="ReplyCommentScreen" component={ReplyCommentScreen} />
         <Stack.Screen name="Search" component={SearchScreen} />
         <Stack.Screen name="TeamDetails" component={TeamDetailsScreen} />
         <Stack.Screen name="PlayerDetails" component={PlayeretailsScreen} />

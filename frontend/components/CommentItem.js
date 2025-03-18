@@ -1,12 +1,107 @@
-import React from "react";
-import { View, Text, StyleSheet, FlatList } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
+
+const API_URL = Constants.expoConfig.extra.apiUrl;
 
 const CommentItem = ({ comment }) => {
+  const navigation = useNavigation();
+  const [likeCount, setLikeCount] = useState(0);
+  const [dislikeCount, setDislikeCount] = useState(0);
+  const [userAction, setUserAction] = useState(null); // 'like', 'dislike' hoặc null
+
+  // Lấy dữ liệu like/dislike ban đầu
+  const fetchLikeData = async () => {
+    const email = await AsyncStorage.getItem("email");
+    if (!email) return;
+
+    try {
+      const response = await fetch(`${API_URL}/comments/likes/${comment.id}/${email}`);
+      const data = await response.json();
+      if (response.ok) {
+        setLikeCount(data.like_count);
+        setDislikeCount(data.dislike_count);
+        setUserAction(data.user_action); // Trạng thái của user
+      }
+    } catch (error) {
+      console.error("Lỗi khi lấy dữ liệu like/dislike:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchLikeData();
+  }, []);
+
+  // Xử lý bấm Like/Dislike
+  const handleToggleLike = async (action) => {
+    const email = await AsyncStorage.getItem("email");
+    if (!email) return;
+
+    try {
+      const response = await fetch(`${API_URL}/comments/toggle`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, comment_id: comment.id, action }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        await fetchLikeData(); // Cập nhật lại số lượt like/dislike
+      }
+    } catch (error) {
+      console.error(`Lỗi khi thực hiện ${action}:`, error);
+    }
+  };
+
   return (
     <View style={styles.commentContainer}>
       <Text style={styles.userName}>{comment.user_name}</Text>
       <Text style={styles.commentText}>{comment.content}</Text>
       <Text style={styles.commentTime}>{new Date(comment.created_at).toLocaleString()}</Text>
+
+      <View style={styles.actionRow}>
+        {/* Nút phản hồi */}
+        <TouchableOpacity 
+          onPress={() => navigation.navigate("ReplyCommentScreen", { parentComment: comment })}
+          style={styles.replyButton}
+        >
+          <Text style={styles.replyButtonText}>Phản hồi</Text>
+        </TouchableOpacity>
+
+        {/* Nút like */}
+        <View style={styles.likeContainer}>
+          <Text style={styles.likeText}>{likeCount}</Text>
+          <TouchableOpacity onPress={() => handleToggleLike("like")} style={styles.actionButton}>
+            <Image 
+              source={
+                userAction === "like" 
+                  ? require("../assets/like/like-full.png") 
+                  : require("../assets/like/like.png")
+              } 
+              style={styles.icon} 
+            />
+          </TouchableOpacity>
+        </View>
+
+        {/* Nút dislike */}
+        <View style={styles.likeContainer}>
+          <Text style={styles.likeText}>{dislikeCount}</Text>
+          <TouchableOpacity onPress={() => handleToggleLike("dislike")} style={styles.actionButton}>
+            <Image 
+              source={
+                userAction === "dislike" 
+                  ? require("../assets/like/dislike-full.png") 
+                  : require("../assets/like/dislike.png")
+              } 
+              style={styles.icon} 
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
 
       {/* Hiển thị các phản hồi lồng nhau */}
       {comment.replies && comment.replies.length > 0 && (
@@ -42,7 +137,39 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   replyContainer: {
-    marginLeft: 20, // Dịch vào để thể hiện cấp độ phản hồi
+    marginLeft: 20,
+  },
+  replyButton: {
+    marginTop: 5,
+    paddingVertical: 5,
+  },
+  replyButtonText: {
+    color: "#007BFF",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  likeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  likeText: {
+    color: "#7a7a7a",
+    fontSize: 14,
+  },
+  actionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: 200,
+    marginTop: 10,
+  },
+  actionButton: {
+    padding: 5,
+  },
+  icon: {
+    width: 20,
+    height: 20,
   },
 });
 
