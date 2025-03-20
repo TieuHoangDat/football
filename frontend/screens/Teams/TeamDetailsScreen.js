@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import Constants from "expo-constants";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import IntroductionTab from "../../components/teams/IntroductionTab";
 import StatisticsTab from "../../components/teams/StatisticsTab";
@@ -14,15 +15,49 @@ const TeamDetailsScreen = () => {
   const navigation = useNavigation();
   const { team } = route.params;
   const [activeTab, setActiveTab] = useState("introduction");
+  const [followCount, setFollowCount] = useState(0);
+  const [isFollowing, setIsFollowing] = useState(false);
 
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case "statistics":
-        return <StatisticsTab team={team} />;
-      case "squad":
-        return <SquadTab team={team} />;
-      default:
-        return <IntroductionTab team={team} />;
+  useEffect(() => {
+    const fetchFollowData = async () => {
+      const email = await AsyncStorage.getItem("email");
+      if (!email) return;
+
+      try {
+        const response = await fetch(`${API_URL}/teams/follow/${team.id}/${email}`);
+        const data = await response.json();
+        if (response.ok) {
+          setFollowCount(data.follow_count);
+          setIsFollowing(data.is_following);
+        }
+      } catch (error) {
+        console.error("Lỗi khi lấy dữ liệu theo dõi:", error);
+      }
+    };
+
+    fetchFollowData();
+  }, [team.id]);
+
+  const handleFollowToggle = async () => {
+    const email = await AsyncStorage.getItem("email");
+    if (!email) return;
+
+    try {
+      const response = await fetch(`${API_URL}/teams/follow`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, team_id: team.id }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setIsFollowing(data.is_following);
+        setFollowCount((prev) => (data.is_following ? prev + 1 : prev - 1));
+      }
+    } catch (error) {
+      console.error("Lỗi khi cập nhật theo dõi:", error);
     }
   };
 
@@ -40,8 +75,17 @@ const TeamDetailsScreen = () => {
         <Text style={styles.teamCountry}>{team.country}</Text>
 
         <View style={styles.followersContainer}>
-          <Image source={require("../../assets/heart.png")} style={styles.heartIcon} />
-          <Text style={styles.followers}>2,9M Người theo dõi</Text>
+          <TouchableOpacity onPress={handleFollowToggle}>
+            <Image
+              source={
+                isFollowing
+                  ? require("../../assets/like/heart-full.png")
+                  : require("../../assets/like/heart.png")
+              }
+              style={styles.heartIcon}
+            />
+          </TouchableOpacity>
+          <Text style={styles.followers}>{followCount.toLocaleString()} Người theo dõi</Text>
         </View>
       </View>
 
@@ -59,7 +103,9 @@ const TeamDetailsScreen = () => {
       </View>
 
       {/* Nội dung tab */}
-      {renderTabContent()}
+      {activeTab === "introduction" && <IntroductionTab team={team} />}
+      {activeTab === "statistics" && <StatisticsTab team={team} />}
+      {activeTab === "squad" && <SquadTab team={team} />}
     </View>
   );
 };
@@ -74,7 +120,7 @@ const styles = StyleSheet.create({
   teamCountry: { fontSize: 16, color: "#aaa", marginTop: 10, marginBottom: 5 },
 
   followersContainer: { flexDirection: "row", alignItems: "center", marginTop: 5 },
-  heartIcon: { width: 18, height: 18, marginRight: 5 },
+  heartIcon: { width: 22, height: 22, marginRight: 8 },
   followers: { fontSize: 16, color: "#fff" },
 
   tabs: { 
