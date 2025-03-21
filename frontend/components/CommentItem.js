@@ -6,6 +6,33 @@ import Constants from "expo-constants";
 
 const API_URL = Constants.expoConfig.extra.apiUrl;
 
+const formatTimeAgo = (timestamp) => {
+  const now = new Date();
+  const commentDate = new Date(timestamp);
+
+  // Chuyển từ UTC sang GMT+7
+  const commentDateLocal = new Date(commentDate.getTime() + 7 * 60 * 60 * 1000);
+
+  const diffInSeconds = Math.floor((now - commentDateLocal) / 1000);
+
+  if (diffInSeconds < 60) {
+    return `${diffInSeconds} giây trước`;
+  }
+
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) {
+    return `${diffInMinutes} phút trước`;
+  }
+
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) {
+    return `${diffInHours} giờ trước`;
+  }
+
+  const diffInDays = Math.floor(diffInHours / 24);
+  return `${diffInDays} ngày trước`;
+};
+
 const CommentItem = ({ comment }) => {
   const navigation = useNavigation();
   const [likeCount, setLikeCount] = useState(0);
@@ -59,10 +86,19 @@ const CommentItem = ({ comment }) => {
 
   return (
     <View style={styles.commentContainer}>
-      <Text style={styles.userName}>{comment.user_name}</Text>
+      {/* Hàng ngang: Avatar + Tên + Thời gian */}
+      <View style={styles.headerRow}>
+        <Image source={require("../assets/user/user.png")} style={styles.avatar} />
+        <View style={styles.userInfo}>
+          <Text style={styles.userName}>{comment.user_name}</Text>
+          <Text style={styles.commentTime}>{formatTimeAgo(comment.created_at)}</Text>
+        </View>
+      </View>
+  
+      {/* Nội dung bình luận */}
       <Text style={styles.commentText}>{comment.content}</Text>
-      <Text style={styles.commentTime}>{new Date(comment.created_at).toLocaleString()}</Text>
-
+  
+      {/* Hàng ngang: Phản hồi - Like - Dislike */}
       <View style={styles.actionRow}>
         {/* Nút phản hồi */}
         <TouchableOpacity 
@@ -102,6 +138,7 @@ const CommentItem = ({ comment }) => {
           </TouchableOpacity>
         </View>
       </View>
+      <View style={styles.line}></View>
 
       {/* Hiển thị các phản hồi lồng nhau */}
       {comment.replies && comment.replies.length > 0 && (
@@ -119,21 +156,33 @@ const CommentItem = ({ comment }) => {
 const styles = StyleSheet.create({
   commentContainer: {
     padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#444",
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 5,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
+  },
+  userInfo: {
+    flex: 1,
   },
   userName: {
     fontWeight: "bold",
     color: "#fff",
   },
-  commentText: {
-    color: "#ddd",
-    fontSize: 16,
-    marginTop: 5,
-  },
   commentTime: {
     fontSize: 12,
     color: "#bbb",
+    marginTop: 5,
+  },
+  commentText: {
+    color: "#ddd",
+    fontSize: 16,
     marginTop: 5,
   },
   replyContainer: {
@@ -163,6 +212,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     width: 200,
     marginTop: 10,
+  },
+  line: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#444",
   },
   actionButton: {
     padding: 5,

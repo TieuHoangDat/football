@@ -7,7 +7,7 @@ import Constants from "expo-constants";
 const API_URL = Constants.expoConfig.extra.apiUrl;
 
 const NewsDetailScreen = ({ route }) => {
-  const { id, title, content, image, create_at } = route.params;
+  const { id, title, content, image, create_at, comment_count } = route.params;
   const navigation = useNavigation();
 
   return (
@@ -18,19 +18,20 @@ const NewsDetailScreen = ({ route }) => {
           <Image source={require("../../assets/arrow-left.png")} style={styles.icon} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Chi tiết tin tức</Text>
-        <TouchableOpacity onPress={() => navigation.navigate("Comments", { id, title, content, image, create_at })}>
-          <Image source={require("../../assets/message.png")} style={styles.icon} />
+        
+        <TouchableOpacity onPress={() => navigation.navigate("Comments", { id, title, content, image, create_at, comment_count })}>
+          <View style={styles.commentContainer}>
+            <Text style={styles.commentCount}>{comment_count}</Text>
+            <Image source={require("../../assets/message.png")} style={styles.icon} />
+          </View>
         </TouchableOpacity>
-
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
         <Image source={{ uri: `${API_URL}/uploads/news/${image}` }} style={styles.image} />
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.time}>Ngày đăng: {new Date(create_at).toLocaleDateString()}</Text>
-        <Text style={styles.body}>
-          {content}
-        </Text>
+        <Text style={styles.body}>{content}</Text>
       </ScrollView>
 
       <Footer />
@@ -85,6 +86,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#ddd",
     lineHeight: 24,
+  },
+  commentContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  commentCount: {
+    fontSize: 14,
+    color: "#fff",
+    marginRight: 5,
   },
 });
 

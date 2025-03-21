@@ -5,7 +5,14 @@ const router = express.Router();
 
 // API lấy tất cả tin tức
 router.get("/", (req, res) => {
-  db.query("SELECT * FROM news ORDER BY create_at DESC", (err, results) => {
+  const sql = `
+    SELECT news.*, 
+           (SELECT COUNT(*) FROM comments WHERE comments.news_id = news.id) AS comment_count
+    FROM news
+    ORDER BY create_at DESC
+  `;
+
+  db.query(sql, (err, results) => {
     if (err) {
       return res.status(500).json({ error: "Lỗi khi lấy danh sách tin tức" });
     }
@@ -17,18 +24,22 @@ router.get("/", (req, res) => {
 router.post("/search", (req, res) => {
   const { keyword } = req.body;
   
-  // Nếu không có từ khóa, trả về tất cả tin tức
-  if (!keyword || keyword.trim() === "") {
-    return db.query("SELECT * FROM news ORDER BY create_at DESC", (err, results) => {
-      if (err) {
-        return res.status(500).json({ error: "Lỗi khi lấy danh sách tin tức" });
-      }
-      res.json(results);
-    });
+  let sql = `
+    SELECT news.*, 
+           (SELECT COUNT(*) FROM comments WHERE comments.news_id = news.id) AS comment_count
+    FROM news
+  `;
+
+  let params = [];
+
+  if (keyword && keyword.trim() !== "") {
+    sql += " WHERE title LIKE ? OR content LIKE ? ";
+    params = [`%${keyword}%`, `%${keyword}%`];
   }
 
-  const searchQuery = "SELECT * FROM news WHERE title LIKE ? OR content LIKE ? ORDER BY create_at DESC";
-  db.query(searchQuery, [`%${keyword}%`, `%${keyword}%`], (err, results) => {
+  sql += " ORDER BY create_at DESC";
+
+  db.query(sql, params, (err, results) => {
     if (err) {
       return res.status(500).json({ error: "Lỗi khi tìm kiếm tin tức" });
     }

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
-// import { useCallback } from "react";
+import { Picker } from "@react-native-picker/picker"; // Thêm Picker
 import CommentItem from "../../components/CommentItem";
 import Constants from "expo-constants";
 
@@ -9,14 +9,14 @@ const API_URL = Constants.expoConfig.extra.apiUrl;
 
 const CommentsScreen = ({ route }) => {
   const navigation = useNavigation();
-  const { id, title, content, image, create_at } = route.params || {};
+  const { id, title, content, image, create_at, comment_count } = route.params || {};
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  const [sortBy, setSortBy] = useState("created_at"); // Mặc định sắp xếp theo thời gian
 
   const fetchComments = useCallback(() => {
     setLoading(true);
-    fetch(`${API_URL}/comments/${id}`)
+    fetch(`${API_URL}/comments/${id}?sortBy=${sortBy}`)
       .then((res) => res.json())
       .then((data) => {
         setComments(data);
@@ -26,8 +26,8 @@ const CommentsScreen = ({ route }) => {
         console.error("Lỗi khi lấy bình luận:", error);
         setLoading(false);
       });
-  }, [id]);
-  
+  }, [id, sortBy]);
+
   useFocusEffect(
     useCallback(() => {
       fetchComments();
@@ -52,8 +52,26 @@ const CommentsScreen = ({ route }) => {
         <Text style={styles.time}>Ngày đăng: {new Date(create_at).toLocaleDateString()}</Text>
       </View>
 
-      {/* Khu vực bình luận */}
-      <Text style={styles.commentTitle}>Bình luận</Text>
+      {/* Khu vực chọn sắp xếp */}
+
+      <View style={styles.sortContainer}>
+        <Text style={styles.commentTitle}>{comment_count} bình luận</Text>
+        <Text style={styles.sortText}>Sắp xếp theo</Text>
+
+        <Picker
+          selectedValue={sortBy}
+          onValueChange={(value) => setSortBy(value)}
+          style={styles.picker}
+          dropdownIconColor="#fff"
+          mode="dropdown"
+        >
+          <Picker.Item label="Mới nhất" value="created_at" />
+          <Picker.Item label="Lượt thích" value="like_count" />
+        </Picker>
+      </View>
+
+
+      {/* Nút thêm bình luận */}
       <TouchableOpacity
         style={styles.addCommentButton}
         onPress={() =>
@@ -63,6 +81,7 @@ const CommentsScreen = ({ route }) => {
         <Text style={styles.addCommentText}>Viết bình luận ...</Text>
       </TouchableOpacity>
 
+      {/* Danh sách bình luận */}
       {loading ? (
         <ActivityIndicator size="large" color="#fff" />
       ) : (
@@ -121,29 +140,45 @@ const styles = StyleSheet.create({
     color: "#bbb",
     marginBottom: 10,
   },
+  sortContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
   commentTitle: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#fff",
-    padding: 10,
+  },
+  sortText: {
+    color: "#fff",
+    fontSize: 16,
+  },
+  picker: {
+    height: 40,
+    width: 100,
+    color: "#fff",
+    backgroundColor: "#333",
+    borderRadius: 5,
   },
   commentList: {
     paddingHorizontal: 10,
   },
   addCommentButton: {
-    backgroundColor: "#1a1a1a", // Màu nền xanh lá (hoặc chọn màu khác)
+    backgroundColor: "#1a1a1a",
     padding: 12,
     margin: 10,
     borderRadius: 8,
-    borderWidth: 1, // Thêm viền
-    borderColor: "#BBB8B8", // Màu viền đậm hơn
-    shadowColor: "#000", // Đổ bóng
+    borderWidth: 1,
+    borderColor: "#BBB8B8",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
-    elevation: 5, // Hiệu ứng nổi trên Android
+    elevation: 5,
   },
-  
   addCommentText: {
     color: "#BBB8B8",
     fontSize: 16,

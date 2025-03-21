@@ -52,7 +52,7 @@ const HomeScreen = ({ navigation }) => {
             data={news}
             keyExtractor={(item) => item.id.toString()}
             renderItem={({ item, index }) => (
-              <NewsItem id={item.id} content={item.content} title={item.title} create_at={item.create_at} image={item.image} isFirst={index === 0} />
+              <NewsItem id={item.id} content={item.content} title={item.title} create_at={item.create_at} image={item.image} isFirst={index === 0} comment_count={item.comment_count} />
             )}
           />
 

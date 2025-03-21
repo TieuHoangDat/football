@@ -5,11 +5,11 @@ import Constants from "expo-constants";
 
 const API_URL = Constants.expoConfig.extra.apiUrl;
 
-const NewsItem = ({ id, title, content, image, create_at, isFirst }) => {
+const NewsItem = ({ id, title, content, image, create_at, isFirst, comment_count }) => {
   const navigation = useNavigation();
 
   return (
-    <TouchableOpacity onPress={() => navigation.navigate("NewsDetail", { id, title, content, image, create_at })}>
+    <TouchableOpacity onPress={() => navigation.navigate("NewsDetail", { id, title, content, image, create_at, comment_count })}>
       <View style={[styles.container, isFirst && styles.firstContainer]}>
         {isFirst ? (
           <>
@@ -17,7 +17,10 @@ const NewsItem = ({ id, title, content, image, create_at, isFirst }) => {
             <Text style={styles.firstTitle}>{title}</Text>
             <View style={styles.row}>
               <Text style={styles.time}>{new Date(create_at).toLocaleDateString()}</Text>
-              <Image source={require("../assets/message.png")} style={styles.icon} />
+              <View style={styles.commentContainer}>
+                <Text style={styles.commentCount}>{comment_count}</Text>
+                <Image source={require("../assets/message.png")} style={styles.icon} />
+              </View>
             </View>
           </>
         ) : (
@@ -28,7 +31,10 @@ const NewsItem = ({ id, title, content, image, create_at, isFirst }) => {
             </View>
             <View style={styles.row}>
               <Text style={styles.time}>{new Date(create_at).toLocaleDateString()}</Text>
-              <Image source={require("../assets/message.png")} style={styles.icon} />
+              <View style={styles.commentContainer}>
+                <Text style={styles.commentCount}>{comment_count}</Text>
+                <Image source={require("../assets/message.png")} style={styles.icon} />
+              </View>
             </View>
           </>
         )}
@@ -85,6 +91,15 @@ const styles = StyleSheet.create({
   icon: {
     width: 20,
     height: 20,
+  },
+  commentContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  commentCount: {
+    fontSize: 14,
+    color: "#fff",
+    marginRight: 5,
   },
 });
 

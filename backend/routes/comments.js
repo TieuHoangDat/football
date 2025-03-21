@@ -3,17 +3,33 @@ const db = require("../config/db");
 
 const router = express.Router();
 
-// API lấy tất cả bình luận của một bài viết theo dạng cây
 router.get("/:news_id", (req, res) => {
   const newsId = req.params.news_id;
+  const sortBy = req.query.sortBy || "created_at"; // Mặc định sắp xếp theo thời gian
 
-  // Truy vấn tất cả bình luận của bài viết
+  // Xác định cột dùng để sắp xếp
+  let orderBy = "c.created_at DESC"; // Mặc định theo thời gian mới nhất
+  if (sortBy === "like_count") {
+    orderBy = "like_count DESC, c.created_at DESC"; // Ưu tiên nhiều like, cùng lượt like thì theo thời gian
+  }
+
+  // Truy vấn lấy tất cả bình luận của bài viết, kèm số like/dislike
   const sql = `
-    SELECT c.id, c.news_id, c.user_id, c.parent_id, c.content, c.created_at, u.name AS user_name
+    SELECT c.id, c.news_id, c.user_id, c.parent_id, c.content, c.created_at, 
+           u.name AS user_name,
+           COALESCE(like_data.like_count, 0) AS like_count,
+           COALESCE(like_data.dislike_count, 0) AS dislike_count
     FROM comments c
     JOIN users u ON c.user_id = u.id
+    LEFT JOIN (
+        SELECT comment_id,
+               SUM(CASE WHEN action = 'like' THEN 1 ELSE 0 END) AS like_count,
+               SUM(CASE WHEN action = 'dislike' THEN 1 ELSE 0 END) AS dislike_count
+        FROM comment_likes
+        GROUP BY comment_id
+    ) like_data ON c.id = like_data.comment_id
     WHERE c.news_id = ?
-    ORDER BY c.created_at ASC
+    ORDER BY ${orderBy}
   `;
 
   db.query(sql, [newsId], (err, results) => {

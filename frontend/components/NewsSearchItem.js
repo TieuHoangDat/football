@@ -15,6 +15,7 @@ const NewsItem = ({ news }) => {
       content: news.content,
       image: news.image,
       create_at: news.create_at,
+      comment_count: news.comment_count,
     });
   };
 
