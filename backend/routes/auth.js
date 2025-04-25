@@ -60,4 +60,57 @@ router.post("/logout", (req, res) => {
   res.json({ message: "Đã đăng xuất" });
 });
 
+// Trả về thông tin voucher mẫu
+router.get("/voucher", (req, res) => {
+  const voucherData = {
+    data: {
+      id: "08dc432f-ca15-4d26-8cac-2ab2d68783a6",
+      title: "voucher giảm % món Linh test",
+      promoCode: "PRO-5051",
+      status: 1,
+      campaignStartDate: "2024-03-14T00:00:00",
+      campaignEndDate: "2025-05-01T23:59:59",
+      description: "<p>test</p>",
+      shortDescription: "<p>test&nbsp;</p>",
+      condition: "<p>test</p>",
+      url: null,
+      publishedDate: "2025-04-25T09:51:43.947375",
+      typeName: "Promotion",
+      typeId: "1",
+      category: 1,
+      categoryName: "Promotion",
+      clmVoucherTypeId: "6184e0fc-bc71-4067-8b6f-34452a335dc6",
+      clmVoucherTypeName: "GGG_EVoucher",
+      isDeleted: false,
+      restaurants: [
+        {
+          id: "08daad3c-8271-40eb-8381-43efb85ed146",
+          code: 13,
+          name: "Kichi-Kichi Phạm Ngọc Thạch",
+          address: "101-B1 Phạm Ngọc Thạch, Đống Đa, Hà Nội",
+          telephone: "0584693537",
+          brandId: "08da8ee7-6efc-49d1-82cc-e679c0060053",
+          brandName: "Kichi-Kichi - Lẩu băng chuyền",
+          regionName: "Ha Noi"
+        },
+        {
+          id: "08db9e7c-e2a4-403d-8e53-30d7623553a0",
+          code: 99004,
+          name: "Ecommerce_HN",
+          address: "229 Tây Sơn, Ngã Tư Sở, Đống Đa, Hà Nội",
+          telephone: "0584693537",
+          brandId: "08dabb1c-1c52-412f-8941-c12871809b2e",
+          brandName: "eCommerce",
+          regionName: "Ha Noi"
+        }
+      ],
+      partners: []
+    },
+    success: true,
+    errors: []
+  };
+
+  res.json(voucherData);
+});
+
 module.exports = router;

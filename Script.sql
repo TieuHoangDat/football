@@ -74,6 +74,23 @@ INSERT INTO teams (name, description, country, image_url) VALUES
 ('Bayern Munich', 'Gã khổng lồ nước Đức.', 'Đức', 'Manchester City.png'),
 ('AC Milan', 'Câu lạc bộ giàu truyền thống tại Ý.', 'Ý', 'Manchester City.png');
 
+INSERT INTO teams (name, description, country, image_url) VALUES
+('Barcelona', 'Đội bóng có lối chơi tiki-taka huyền thoại.', 'Tây Ban Nha', 'Barcelona.png'),
+('Liverpool', 'Đội bóng giàu truyền thống tại Anh.', 'Anh', 'Liverpool.png'),
+('Chelsea', 'Gã nhà giàu của bóng đá Anh.', 'Anh', 'Chelsea.png'),
+('Juventus', 'Đội bóng hàng đầu của Ý.', 'Ý', 'Juventus.png'),
+('Inter Milan', 'Một trong những đội bóng vĩ đại của Ý.', 'Ý', 'Inter Milan.png'),
+('Arsenal', 'Pháo thủ thành London.', 'Anh', 'Arsenal.png'),
+('Manchester City', 'Nhà vô địch nước Anh nhiều năm gần đây.', 'Anh', 'Manchester City.png'),
+('Borussia Dortmund', 'Đội bóng mạnh của Bundesliga.', 'Đức', 'Borussia Dortmund.png'),
+('Atletico Madrid', 'Đối thủ khó chịu của Real và Barca.', 'Tây Ban Nha', 'Atletico Madrid.png'),
+('Tottenham Hotspur', 'Đội bóng mạnh của Premier League.', 'Anh', 'Tottenham Hotspur.png'),
+('Napoli', 'Đội bóng từng được Maradona dẫn dắt.', 'Ý', 'Napoli.png'),
+('AS Roma', 'Đội bóng thủ đô nước Ý.', 'Ý', 'AS Roma.png'),
+('Sevilla', 'Đội bóng giàu thành tích tại Europa League.', 'Tây Ban Nha', 'Sevilla.png'),
+('Ajax', 'Cái nôi đào tạo bóng đá Hà Lan.', 'Hà Lan', 'Ajax.png'),
+('Porto', 'Đội bóng hàng đầu Bồ Đào Nha.', 'Bồ Đào Nha', 'Porto.png');
+
 
 CREATE TABLE players (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -118,3 +135,34 @@ INSERT INTO team_players (team_id, player_id) VALUES
 
 
 
+CREATE TABLE comment_likes (
+    id INT AUTO_INCREMENT PRIMARY KEY,  
+    user_id INT NOT NULL,  -- Ai đã like/dislike bình luận
+    comment_id INT NOT NULL,  -- Bình luận nào
+    action ENUM('like', 'dislike') NOT NULL,  -- Like hoặc Dislike
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- Thời gian like/dislike
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (comment_id) REFERENCES comments(id) ON DELETE CASCADE
+);
+
+
+-- Bảng user_favorites_teams: Theo dõi đội yêu thích
+CREATE TABLE user_favorites_teams (
+    id INT AUTO_INCREMENT PRIMARY KEY, -- ID theo dõi
+    user_id INT NOT NULL, -- ID người dùng
+    team_id INT NOT NULL, -- ID đội bóng yêu thích
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Ngày đăng ký theo dõi
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
+);
+
+
+-- Bảng user_favorite_players: Theo dõi cầu thủ yêu thích
+CREATE TABLE user_favorite_players (
+    id INT AUTO_INCREMENT PRIMARY KEY, -- ID theo dõi
+    user_id INT NOT NULL, -- ID người dùng
+    player_id INT NOT NULL, -- ID cầu thủ yêu thích
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Ngày đăng ký theo dõi
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+);
