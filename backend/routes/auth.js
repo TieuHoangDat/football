@@ -67,7 +67,7 @@ router.get("/voucher", (req, res) => {
       id: "08dc432f-ca15-4d26-8cac-2ab2d68783a6",
       title: "voucher giảm % món Linh test",
       promoCode: "PRO-5051",
-      status: 1,
+      status: 5,
       campaignStartDate: "2024-03-14T00:00:00",
       campaignEndDate: "2025-05-01T23:59:59",
       description: "<p>test</p>",
@@ -81,7 +81,7 @@ router.get("/voucher", (req, res) => {
       categoryName: "Promotion",
       clmVoucherTypeId: "6184e0fc-bc71-4067-8b6f-34452a335dc6",
       clmVoucherTypeName: "GGG_EVoucher",
-      isDeleted: false,
+      isDeleted: true,
       restaurants: [
         {
           id: "08daad3c-8271-40eb-8381-43efb85ed146",
