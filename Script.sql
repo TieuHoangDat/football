@@ -166,3 +166,214 @@ CREATE TABLE user_favorite_players (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
 );
+
+-- Bảng competitions để lưu thông tin các giải đấu
+create table competitions
+(
+    id         int auto_increment
+        primary key,
+    name       varchar(255)                            not null,
+    country    varchar(100)                            null,
+    logo_url   varchar(255)                            null,
+    type       enum ('league', 'cup', 'international') not null,
+    season     varchar(20)                             not null,
+    created_at timestamp default CURRENT_TIMESTAMP     null
+);
+
+INSERT INTO football.competitions (id, name, country, logo_url, type, season, created_at) VALUES (1, 'Premier League', 'Anh', 'https://assets.stickpng.com/images/580b57fcd9996e24bc43c4e7.png', 'league', '2024-2025', '2025-05-15 15:59:51');
+INSERT INTO football.competitions (id, name, country, logo_url, type, season, created_at) VALUES (2, 'La Liga', 'Tây Ban Nha', 'https://assets.laliga.com/assets/logos/laliga-v/laliga-v-1200x1200.png', 'league', '2024-2025', '2025-05-15 15:59:51');
+INSERT INTO football.competitions (id, name, country, logo_url, type, season, created_at) VALUES (3, 'Champions League', null, 'https://assets.stickpng.com/images/5842fe06a6515b1e0ad75b3c.png', 'international', '2024-2025', '2025-05-15 15:59:51');
+INSERT INTO football.competitions (id, name, country, logo_url, type, season, created_at) VALUES (4, 'Copa del Rey', 'Tây Ban Nha', 'https://upload.wikimedia.org/wikipedia/en/a/a9/Copa_del_Rey_logo.png', 'cup', '2024-2025', '2025-05-15 15:59:51');
+INSERT INTO football.competitions (id, name, country, logo_url, type, season, created_at) VALUES (5, 'Serie A', 'Ý', 'https://upload.wikimedia.org/wikipedia/en/e/e1/Serie_A_logo_%282019%29.svg', 'league', '2024-2025', '2025-05-15 15:59:51');
+INSERT INTO football.competitions (id, name, country, logo_url, type, season, created_at) VALUES (6, 'Bundesliga', 'Đức', 'https://assets.bundesliga.com/tachyon/sites/2/2019/08/bundesliga-logo-1024x1024.png', 'league', '2024-2025', '2025-05-15 15:59:51');
+INSERT INTO football.competitions (id, name, country, logo_url, type, season, created_at) VALUES (7, 'Ligue 1', 'Pháp', 'https://upload.wikimedia.org/wikipedia/en/thumb/1/14/Ligue_1_Uber_Eats.svg/1200px-Ligue_1_Uber_Eats.svg.png', 'league', '2024-2025', '2025-05-15 15:59:51');
+INSERT INTO football.competitions (id, name, country, logo_url, type, season, created_at) VALUES (8, 'FA Cup', 'Anh', 'https://assets.stickpng.com/images/580b57fcd9996e24bc43c4ec.png', 'cup', '2024-2025', '2025-05-15 15:59:51');
+
+
+-- Bảng matches để lưu thông tin các trận đấu
+create table matches
+(
+    id             int auto_increment
+        primary key,
+    home_team_id   int                                                              not null,
+    away_team_id   int                                                              not null,
+    competition_id int                                                              not null,
+    match_date     datetime                                                         not null,
+    venue          varchar(255)                                                     null,
+    home_score     int                                    default 0                 null,
+    away_score     int                                    default 0                 null,
+    status         enum ('scheduled', 'live', 'finished') default 'scheduled'       null,
+    created_at     timestamp                              default CURRENT_TIMESTAMP null,
+    constraint matches_ibfk_1
+        foreign key (home_team_id) references teams (id)
+            on delete cascade,
+    constraint matches_ibfk_2
+        foreign key (away_team_id) references teams (id)
+            on delete cascade,
+    constraint matches_ibfk_3
+        foreign key (competition_id) references competitions (id)
+            on delete cascade
+);
+
+create index away_team_id
+    on matches (away_team_id);
+
+create index competition_id
+    on matches (competition_id);
+
+create index home_team_id
+    on matches (home_team_id);
+
+INSERT INTO football.matches (id, home_team_id, away_team_id, competition_id, match_date, venue, home_score, away_score, status, created_at) VALUES (1, 1, 2, 1, '2025-03-15 20:00:00', 'Old Trafford', 2, 1, 'finished', '2025-05-15 15:59:51');
+INSERT INTO football.matches (id, home_team_id, away_team_id, competition_id, match_date, venue, home_score, away_score, status, created_at) VALUES (2, 3, 4, 7, '2025-03-16 19:30:00', 'Parc des Princes', 3, 3, 'finished', '2025-05-15 15:59:51');
+INSERT INTO football.matches (id, home_team_id, away_team_id, competition_id, match_date, venue, home_score, away_score, status, created_at) VALUES (3, 5, 6, 5, '2025-03-17 21:00:00', 'San Siro', 0, 2, 'finished', '2025-05-15 15:59:51');
+INSERT INTO football.matches (id, home_team_id, away_team_id, competition_id, match_date, venue, home_score, away_score, status, created_at) VALUES (4, 7, 8, 1, '2025-03-20 20:45:00', 'Etihad Stadium', 4, 0, 'finished', '2025-05-15 15:59:51');
+INSERT INTO football.matches (id, home_team_id, away_team_id, competition_id, match_date, venue, home_score, away_score, status, created_at) VALUES (5, 9, 10, 2, '2025-04-10 21:00:00', 'Wanda Metropolitano', 1, 1, 'finished', '2025-05-15 15:59:51');
+INSERT INTO football.matches (id, home_team_id, away_team_id, competition_id, match_date, venue, home_score, away_score, status, created_at) VALUES (6, 12, 13, 4, '2025-04-15 19:00:00', 'Stadio Olimpico', null, null, 'scheduled', '2025-05-15 15:59:51');
+
+
+-- Bảng match_stats để lưu thống kê của trận đấu
+create table match_stats
+(
+    id              int auto_increment
+        primary key,
+    match_id        int                                 not null,
+    team_id         int                                 not null,
+    possession      decimal(5, 2)                       null,
+    shots           int       default 0                 null,
+    shots_on_target int       default 0                 null,
+    corners         int       default 0                 null,
+    fouls           int       default 0                 null,
+    yellow_cards    int       default 0                 null,
+    red_cards       int       default 0                 null,
+    created_at      timestamp default CURRENT_TIMESTAMP null,
+    constraint match_stats_ibfk_1
+        foreign key (match_id) references matches (id)
+            on delete cascade,
+    constraint match_stats_ibfk_2
+        foreign key (team_id) references teams (id)
+            on delete cascade
+);
+
+create index match_id
+    on match_stats (match_id);
+
+create index team_id
+    on match_stats (team_id);
+
+INSERT INTO football.match_stats (id, match_id, team_id, possession, shots, shots_on_target, corners, fouls, yellow_cards, red_cards, created_at) VALUES (1, 1, 1, 45.30, 12, 5, 6, 10, 2, 0, '2025-05-15 15:59:51');
+INSERT INTO football.match_stats (id, match_id, team_id, possession, shots, shots_on_target, corners, fouls, yellow_cards, red_cards, created_at) VALUES (2, 1, 2, 54.70, 15, 6, 8, 8, 3, 0, '2025-05-15 15:59:51');
+INSERT INTO football.match_stats (id, match_id, team_id, possession, shots, shots_on_target, corners, fouls, yellow_cards, red_cards, created_at) VALUES (3, 2, 3, 51.20, 18, 8, 7, 12, 2, 0, '2025-05-15 15:59:51');
+INSERT INTO football.match_stats (id, match_id, team_id, possession, shots, shots_on_target, corners, fouls, yellow_cards, red_cards, created_at) VALUES (4, 2, 4, 48.80, 14, 9, 5, 9, 1, 1, '2025-05-15 15:59:51');
+INSERT INTO football.match_stats (id, match_id, team_id, possession, shots, shots_on_target, corners, fouls, yellow_cards, red_cards, created_at) VALUES (5, 3, 5, 38.50, 9, 3, 4, 15, 4, 1, '2025-05-15 15:59:51');
+INSERT INTO football.match_stats (id, match_id, team_id, possession, shots, shots_on_target, corners, fouls, yellow_cards, red_cards, created_at) VALUES (6, 3, 6, 61.50, 17, 7, 9, 7, 1, 0, '2025-05-15 15:59:51');
+INSERT INTO football.match_stats (id, match_id, team_id, possession, shots, shots_on_target, corners, fouls, yellow_cards, red_cards, created_at) VALUES (7, 4, 7, 67.80, 22, 12, 11, 6, 0, 0, '2025-05-15 15:59:51');
+INSERT INTO football.match_stats (id, match_id, team_id, possession, shots, shots_on_target, corners, fouls, yellow_cards, red_cards, created_at) VALUES (8, 4, 8, 32.20, 5, 1, 2, 14, 3, 1, '2025-05-15 15:59:51');
+INSERT INTO football.match_stats (id, match_id, team_id, possession, shots, shots_on_target, corners, fouls, yellow_cards, red_cards, created_at) VALUES (9, 5, 9, 48.90, 10, 4, 5, 18, 5, 0, '2025-05-15 15:59:51');
+INSERT INTO football.match_stats (id, match_id, team_id, possession, shots, shots_on_target, corners, fouls, yellow_cards, red_cards, created_at) VALUES (10, 5, 10, 51.10, 8, 2, 4, 11, 3, 0, '2025-05-15 15:59:51');
+
+
+-- Bảng player_match_stats để lưu thống kê của cầu thủ trong trận đấu
+create table player_match_stats
+(
+    id             int auto_increment
+        primary key,
+    match_id       int                                     not null,
+    player_id      int                                     not null,
+    team_id        int                                     not null,
+    minutes_played int           default 0                 null,
+    goals          int           default 0                 null,
+    assists        int           default 0                 null,
+    shots          int           default 0                 null,
+    passes         int           default 0                 null,
+    pass_accuracy  decimal(5, 2) default 0.00              null,
+    tackles        int           default 0                 null,
+    interceptions  int           default 0                 null,
+    yellow_cards   int           default 0                 null,
+    red_cards      int           default 0                 null,
+    created_at     timestamp     default CURRENT_TIMESTAMP null,
+    constraint player_match_stats_ibfk_1
+        foreign key (match_id) references matches (id)
+            on delete cascade,
+    constraint player_match_stats_ibfk_2
+        foreign key (player_id) references players (id)
+            on delete cascade,
+    constraint player_match_stats_ibfk_3
+        foreign key (team_id) references teams (id)
+            on delete cascade
+);
+
+create index match_id
+    on player_match_stats (match_id);
+
+create index player_id
+    on player_match_stats (player_id);
+
+create index team_id
+    on player_match_stats (team_id);
+
+INSERT INTO football.player_match_stats (id, match_id, player_id, team_id, minutes_played, goals, assists, shots, passes, pass_accuracy, tackles, interceptions, yellow_cards, red_cards, created_at) VALUES (1, 1, 1, 1, 90, 2, 0, 5, 42, 88.50, 1, 0, 0, 0, '2025-05-15 15:59:52');
+INSERT INTO football.player_match_stats (id, match_id, player_id, team_id, minutes_played, goals, assists, shots, passes, pass_accuracy, tackles, interceptions, yellow_cards, red_cards, created_at) VALUES (2, 1, 2, 2, 90, 1, 1, 6, 65, 92.30, 0, 1, 0, 0, '2025-05-15 15:59:52');
+INSERT INTO football.player_match_stats (id, match_id, player_id, team_id, minutes_played, goals, assists, shots, passes, pass_accuracy, tackles, interceptions, yellow_cards, red_cards, created_at) VALUES (3, 2, 3, 3, 90, 2, 1, 7, 38, 84.20, 2, 1, 1, 0, '2025-05-15 15:59:52');
+INSERT INTO football.player_match_stats (id, match_id, player_id, team_id, minutes_played, goals, assists, shots, passes, pass_accuracy, tackles, interceptions, yellow_cards, red_cards, created_at) VALUES (4, 2, 4, 4, 85, 2, 0, 5, 27, 81.50, 0, 0, 0, 0, '2025-05-15 15:59:52');
+INSERT INTO football.player_match_stats (id, match_id, player_id, team_id, minutes_played, goals, assists, shots, passes, pass_accuracy, tackles, interceptions, yellow_cards, red_cards, created_at) VALUES (5, 3, 5, 5, 75, 0, 0, 2, 56, 90.10, 3, 2, 1, 0, '2025-05-15 15:59:52');
+
+-- Bảng notifications để lưu các thông báo của người dùng
+CREATE TABLE notifications (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    notification_type VARCHAR(50) NOT NULL, -- MATCH_REMINDER, MATCH_START, MATCH_END, GOAL, RED_CARD, PENALTY, LINEUP_ANNOUNCED, TEAM_NEWS, PLAYER_INJURY, TRANSFER_NEWS, COMPETITION_START, SYSTEM_UPDATE, ACCOUNT, COMMENT_REPLY, COMMENT_LIKE, MENTION
+    title VARCHAR(100) NOT NULL,
+    message TEXT NOT NULL,
+    related_entity_type VARCHAR(50), -- MATCH, TEAM, PLAYER, COMPETITION, SEASON, USER, SYSTEM, COMMENT
+    related_entity_id INTEGER,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    delivered_at TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Bảng notification_settings để lưu cài đặt thông báo của người dùng
+CREATE TABLE notification_settings (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    match_start BOOLEAN DEFAULT TRUE,
+    match_end BOOLEAN DEFAULT TRUE,
+    goals BOOLEAN DEFAULT TRUE,
+    red_cards BOOLEAN DEFAULT TRUE,
+    penalties BOOLEAN DEFAULT TRUE,
+    lineups BOOLEAN DEFAULT TRUE,
+    team_news BOOLEAN DEFAULT TRUE,
+    player_injuries BOOLEAN DEFAULT TRUE,
+    transfer_news BOOLEAN DEFAULT TRUE,
+    fixture_reminders BOOLEAN DEFAULT TRUE,
+    competition_updates BOOLEAN DEFAULT TRUE,
+    player_stats BOOLEAN DEFAULT FALSE,
+    comment_replies BOOLEAN DEFAULT TRUE,
+    comment_likes BOOLEAN DEFAULT TRUE,
+    mentions BOOLEAN DEFAULT TRUE,
+    push_enabled BOOLEAN DEFAULT TRUE,
+    email_enabled BOOLEAN DEFAULT FALSE,
+    quiet_hours_start TIME,
+    quiet_hours_end TIME,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Bảng user_subscriptions để lưu đối tượng theo dõi của người dùng
+CREATE TABLE user_subscriptions (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    subscription_type VARCHAR(50) NOT NULL, -- TEAM, PLAYER, COMPETITION
+    entity_id INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(user_id, subscription_type, entity_id)
+);
+
+-- Tạo chỉ mục để tối ưu truy vấn
+CREATE INDEX idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX idx_notifications_type ON notifications(notification_type);
+CREATE INDEX idx_notifications_is_read ON notifications(is_read);
+CREATE INDEX idx_notification_settings_user_id ON notification_settings(user_id);
+CREATE INDEX idx_user_subscriptions_user_id ON user_subscriptions(user_id);
+CREATE INDEX idx_user_subscriptions_entity ON user_subscriptions(subscription_type, entity_id);

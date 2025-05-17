@@ -33,7 +33,7 @@ const formatTimeAgo = (timestamp) => {
   return `${diffInDays} ngày trước`;
 };
 
-const CommentItem = ({ comment }) => {
+const CommentItem = ({ comment, highlight = false, isFlattened = false }) => {
   const navigation = useNavigation();
   const [likeCount, setLikeCount] = useState(0);
   const [dislikeCount, setDislikeCount] = useState(0);
@@ -85,7 +85,11 @@ const CommentItem = ({ comment }) => {
   };
 
   return (
-    <View style={styles.commentContainer}>
+    <View style={[
+      styles.commentContainer, 
+      { marginLeft: comment.level * 20 }, // Thụt lề theo cấp độ comment
+      highlight && styles.highlightedComment // Thêm style highlight nếu được chỉ định
+    ]}>
       {/* Hàng ngang: Avatar + Tên + Thời gian */}
       <View style={styles.headerRow}>
         <Image source={require("../assets/user/user.png")} style={styles.avatar} />
@@ -140,8 +144,8 @@ const CommentItem = ({ comment }) => {
       </View>
       <View style={styles.line}></View>
 
-      {/* Hiển thị các phản hồi lồng nhau */}
-      {comment.replies && comment.replies.length > 0 && (
+      {/* Hiển thị các phản hồi lồng nhau - chỉ hiển thị khi KHÔNG dùng cấu trúc phẳng */}
+      {!isFlattened && comment.replies && comment.replies.length > 0 && (
         <FlatList
           data={comment.replies}
           keyExtractor={(reply) => reply.id.toString()}
@@ -223,6 +227,11 @@ const styles = StyleSheet.create({
   icon: {
     width: 20,
     height: 20,
+  },
+  highlightedComment: {
+    backgroundColor: 'rgba(52, 152, 219, 0.15)', // Màu highlight nhẹ
+    borderLeftWidth: 3,
+    borderLeftColor: '#3498db',
   },
 });
 

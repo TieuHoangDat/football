@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { Picker } from "@react-native-picker/picker"; // Thêm Picker
@@ -9,10 +9,29 @@ const API_URL = Constants.expoConfig.extra.apiUrl;
 
 const CommentsScreen = ({ route }) => {
   const navigation = useNavigation();
-  const { id, title, content, image, create_at, comment_count } = route.params || {};
+  const { id, title, content, image, create_at, comment_count, commentId, fromNotification } = route.params || {};
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState("created_at"); // Mặc định sắp xếp theo thời gian
+  const [flattenedComments, setFlattenedComments] = useState([]);
+  const flatListRef = useRef(null);
+
+  // Hàm làm phẳng cây comment thành danh sách 1 chiều để dễ tìm kiếm
+  const flattenComments = useCallback((commentsTree) => {
+    let result = [];
+    
+    const flatten = (comments, level = 0) => {
+      comments.forEach(comment => {
+        result.push({...comment, level});
+        if (comment.replies && comment.replies.length > 0) {
+          flatten(comment.replies, level + 1);
+        }
+      });
+    };
+    
+    flatten(commentsTree);
+    return result;
+  }, []);
 
   const fetchComments = useCallback(() => {
     setLoading(true);
@@ -20,19 +39,45 @@ const CommentsScreen = ({ route }) => {
       .then((res) => res.json())
       .then((data) => {
         setComments(data);
+        // Làm phẳng danh sách comment để dễ tìm kiếm
+        const flattened = flattenComments(data);
+        setFlattenedComments(flattened);
         setLoading(false);
+        
+        // Cuộn đến comment nếu có commentId và đến từ thông báo
+        if (commentId && fromNotification && flatListRef.current) {
+          setTimeout(() => {
+            scrollToComment(commentId, flattened);
+          }, 500); // Đợi chút để FlatList render xong
+        }
       })
       .catch((error) => {
         console.error("Lỗi khi lấy bình luận:", error);
         setLoading(false);
       });
-  }, [id, sortBy]);
+  }, [id, sortBy, commentId, fromNotification, flattenComments]);
+
+  // Hàm cuộn đến comment cụ thể
+  const scrollToComment = (targetCommentId, flattened) => {
+    const index = flattened.findIndex(comment => comment.id === parseInt(targetCommentId));
+    if (index !== -1 && flatListRef.current) {
+      flatListRef.current.scrollToIndex({ 
+        index, 
+        animated: true,
+        viewPosition: 0.5 // 0 là đầu, 0.5 là giữa, 1 là cuối
+      });
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
       fetchComments();
     }, [fetchComments])
   );
+
+  const highlightComment = (item) => {
+    return item.id === parseInt(commentId) && fromNotification;
+  };
 
   return (
     <View style={styles.container}>
@@ -86,10 +131,29 @@ const CommentsScreen = ({ route }) => {
         <ActivityIndicator size="large" color="#fff" />
       ) : (
         <FlatList
-          data={comments}
+          ref={flatListRef}
+          data={flattenedComments}
           keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => <CommentItem comment={item} />}
+          renderItem={({ item }) => (
+            <CommentItem 
+              comment={item} 
+              highlight={highlightComment(item)}
+              isFlattened={true}
+            />
+          )}
           contentContainerStyle={styles.commentList}
+          onScrollToIndexFailed={(info) => {
+            console.warn('Không thể cuộn đến comment', info);
+            // Fallback đến vị trí gần nhất
+            setTimeout(() => {
+              if (flatListRef.current) {
+                flatListRef.current.scrollToOffset({
+                  offset: info.averageItemLength * info.index,
+                  animated: true,
+                });
+              }
+            }, 100);
+          }}
         />
       )}
     </View>
