@@ -8,14 +8,16 @@ import RegisterScreen from "./screens/Auth/RegisterScreen";
 import HomeScreen from "./screens/News/HomeScreen";
 import MatchesScreen from "./screens/Matches/MatchesScreen";
 import StatsScreen from "./screens/Stats/StatsScreen";
+import MatchStatsScreen from "./screens/Stats/MatchStatsScreen";
 import AccountScreen from "./screens/AccountScreen";
+import NotificationsScreen from "./screens/NotificationsScreen";
 import NewsDetailScreen from "./screens/News/NewsDetailScreen";
 import CommentsScreen from "./screens/News/CommentsScreen";
 import AddCommentScreen from "./screens/News/AddCommentScreen";
 import ReplyCommentScreen from "./screens/News/ReplyCommentScreen";
 import SearchScreen from "./screens/SearchScreen";
-import TeamDetailsScreen from "./screens/Teams/TeamDetailsScreen"; // Màn hình giới thiệu
-import PlayeretailsScreen from "./screens/Teams/PlayerDetailsScreen"; // Màn hình giới thiệu
+import TeamDetailsScreen from "./screens/Teams/TeamDetailsScreen";
+import PlayeretailsScreen from "./screens/Teams/PlayerDetailsScreen";
 
 
 const Stack = createNativeStackNavigator();
@@ -50,6 +52,8 @@ export default function App() {
         <Stack.Screen name="Matches" component={MatchesScreen} />
         <Stack.Screen name="Stats" component={StatsScreen} />
         <Stack.Screen name="Account" component={AccountScreen} />
+        <Stack.Screen name="Notifications" component={NotificationsScreen} />
+        <Stack.Screen name="MatchStats" component={MatchStatsScreen} />
         <Stack.Screen name="NewsDetail" component={NewsDetailScreen} />
         <Stack.Screen name="Comments" component={CommentsScreen} />
         <Stack.Screen name="AddCommentScreen" component={AddCommentScreen} />

@@ -21,7 +21,15 @@ const NewsItem = ({ news }) => {
 
   return (
     <TouchableOpacity onPress={handlePress} style={styles.container}>
-      <Image source={{ uri: `${API_URL}/uploads/news/${news.image}` }} style={styles.image} />
+      {news.image ? (
+        <Image 
+          source={{ uri: `${API_URL}/uploads/news/${news.image}` }} 
+          style={styles.image}
+          onError={({ nativeEvent: { error } }) => console.log('Image loading error:', error)}
+        />
+      ) : (
+        <View style={[styles.image, styles.placeholderImage]} />
+      )}
       <View style={styles.content}>
         <Text style={styles.title}>{news.title}</Text>
         <Text numberOfLines={2} ellipsizeMode="tail" style={styles.description}>
@@ -38,6 +46,9 @@ const styles = StyleSheet.create({
   content: { flex: 1 },
   title: { fontSize: 16, fontWeight: "bold", color: "#fff", marginBottom: 5 },
   description: { fontSize: 14, color: "#ccc" },
+  placeholderImage: {
+    backgroundColor: "#333",
+  },
 });
 
 export default NewsItem;
