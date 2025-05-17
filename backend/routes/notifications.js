@@ -396,4 +396,157 @@ router.put("/read/all", authMiddleware, (req, res) => {
   );
 });
 
+/**
+ * @route   POST /notifications/send
+ * @desc    Gửi thông báo đến người dùng
+ * @access  Private (Admin only)
+ */
+router.post("/send", authMiddleware, (req, res) => {
+  const { user_id, notification_type, title, message, related_entity_type, related_entity_id, users } = req.body;
+  
+  // // Kiểm tra quyền admin (có thể thay đổi tùy theo cấu trúc của ứng dụng)
+  // if (req.user.role !== 'admin') {
+  //   return res.status(403).json({ error: "Không có quyền truy cập" });
+  // }
+  
+  // Kiểm tra thông tin bắt buộc
+  if ((!user_id && !users) || !notification_type || !title || !message) {
+    return res.status(400).json({ error: "Thiếu thông tin bắt buộc" });
+  }
+  
+  // Nếu có danh sách người dùng
+  if (users && Array.isArray(users) && users.length > 0) {
+    // Chuẩn bị các thông báo để chèn
+    const notifications = users.map(userId => [
+      userId,
+      notification_type,
+      title,
+      message,
+      related_entity_type || null,
+      related_entity_id || null,
+      false, // is_read
+      new Date() // created_at
+    ]);
+    
+    const query = `
+      INSERT INTO notifications 
+      (user_id, notification_type, title, message, related_entity_type, related_entity_id, is_read, created_at) 
+      VALUES ?
+    `;
+    
+    db.query(query, [notifications], (err, result) => {
+      if (err) {
+        console.error("Lỗi khi gửi thông báo:", err);
+        return res.status(500).json({ error: "Lỗi server khi gửi thông báo" });
+      }
+      
+      return res.status(201).json({
+        message: `Đã gửi thông báo đến ${result.affectedRows} người dùng`,
+        count: result.affectedRows
+      });
+    });
+  } 
+  // Nếu chỉ gửi cho một người dùng
+  else {
+    db.query(
+      `INSERT INTO notifications 
+       (user_id, notification_type, title, message, related_entity_type, related_entity_id, is_read, created_at) 
+       VALUES (?, ?, ?, ?, ?, ?, false, NOW())`,
+      [user_id, notification_type, title, message, related_entity_type || null, related_entity_id || null],
+      (err, result) => {
+        if (err) {
+          console.error("Lỗi khi gửi thông báo:", err);
+          return res.status(500).json({ error: "Lỗi server khi gửi thông báo" });
+        }
+        
+        return res.status(201).json({
+          message: "Đã gửi thông báo thành công",
+          notification_id: result.insertId
+        });
+      }
+    );
+  }
+});
+
+/**
+ * @route   POST /notifications/broadcast
+ * @desc    Gửi thông báo đến tất cả người dùng hoặc nhóm người dùng theo tiêu chí
+ * @access  Private (Admin only)
+ */
+router.post("/broadcast", authMiddleware, (req, res) => {
+  const { notification_type, title, message, related_entity_type, related_entity_id, target } = req.body;
+  
+  // Kiểm tra quyền admin
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: "Không có quyền truy cập" });
+  }
+  
+  // Kiểm tra thông tin bắt buộc
+  if (!notification_type || !title || !message) {
+    return res.status(400).json({ error: "Thiếu thông tin bắt buộc" });
+  }
+  
+  let userQuery = "SELECT id FROM users";
+  let queryParams = [];
+  
+  // Lọc người dùng theo tiêu chí nếu có
+  if (target) {
+    // Các tiêu chí có thể là:
+    // - subscription_type và entity_id: gửi cho người dùng đã đăng ký theo dõi đối tượng cụ thể
+    if (target.subscription_type && target.entity_id) {
+      userQuery = `
+        SELECT user_id as id FROM user_subscriptions 
+        WHERE subscription_type = ? AND entity_id = ?
+      `;
+      queryParams = [target.subscription_type, target.entity_id];
+    }
+    // Có thể thêm các tiêu chí khác tùy theo yêu cầu
+  }
+  
+  // Lấy danh sách người dùng theo tiêu chí
+  db.query(userQuery, queryParams, (err, users) => {
+    if (err) {
+      console.error("Lỗi khi lấy danh sách người dùng:", err);
+      return res.status(500).json({ error: "Lỗi server" });
+    }
+    
+    if (users.length === 0) {
+      return res.status(404).json({ 
+        message: "Không tìm thấy người dùng phù hợp với tiêu chí" 
+      });
+    }
+    
+    // Chuẩn bị dữ liệu thông báo cho nhiều người dùng
+    const notifications = users.map(user => [
+      user.id,
+      notification_type,
+      title,
+      message,
+      related_entity_type || null,
+      related_entity_id || null,
+      false, // is_read
+      new Date() // created_at
+    ]);
+    
+    // Gửi thông báo cho tất cả người dùng
+    const query = `
+      INSERT INTO notifications 
+      (user_id, notification_type, title, message, related_entity_type, related_entity_id, is_read, created_at) 
+      VALUES ?
+    `;
+    
+    db.query(query, [notifications], (err, result) => {
+      if (err) {
+        console.error("Lỗi khi gửi thông báo:", err);
+        return res.status(500).json({ error: "Lỗi server khi gửi thông báo" });
+      }
+      
+      return res.status(201).json({
+        message: `Đã gửi thông báo đến ${result.affectedRows} người dùng`,
+        count: result.affectedRows
+      });
+    });
+  });
+});
+
 module.exports = router; 

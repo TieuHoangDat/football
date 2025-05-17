@@ -10,6 +10,16 @@ import Footer from '../components/Footer';
 // Lấy API URL từ app.json
 const API_URL = Constants.expoConfig.extra.apiUrl;
 
+// Bảng màu
+const COLORS = {
+  primary: "#3498db",    // Xanh dương
+  background: "#1A1A1A", // Nền tối
+  cardBg: "#262626",     // Nền card
+  text: "#FFFFFF",       // Text trắng
+  textSecondary: "#BBB", // Text phụ
+  border: "#333",        // Viền
+};
+
 const NotificationsScreen = ({ navigation }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -142,28 +152,25 @@ const NotificationsScreen = ({ navigation }) => {
       markAsRead(notification.id);
     }
     
-    // Chuyển hướng dựa trên loại thông báo
-    switch (notification.related_entity_type) {
-      case 'MATCH':
-        navigation.navigate('MatchStats', { matchId: notification.related_entity_id });
-        break;
-      case 'TEAM':
-        navigation.navigate('TeamDetails', { teamId: notification.related_entity_id });
-        break;
-      case 'PLAYER':
-        navigation.navigate('PlayerDetails', { playerId: notification.related_entity_id });
-        break;
-      case 'COMMENT':
-        // Điều hướng đến màn hình bình luận cụ thể
-        navigation.navigate('Comments', { 
-          newsId: notification.related_entity_id,
-          scrollToComment: true
-        });
-        break;
-      default:
-        // Nếu không có điều hướng cụ thể
-        break;
+    // Chỉ điều hướng nếu có navigation_data
+    if (notification.navigation_data) {
+      try {
+        // Kiểm tra xem navigation_data đã là object hay chưa
+        let navData = notification.navigation_data;
+        
+        // Nếu là string thì parse, nếu không thì sử dụng trực tiếp
+        if (typeof navData === 'string') {
+          navData = JSON.parse(navData);
+        }
+        
+        if (navData.screen && navData.params) {
+          navigation.navigate(navData.screen, navData.params);
+        }
+      } catch (error) {
+        console.error('Lỗi khi xử lý navigation_data:', error);
+      }
     }
+    // Không cần fallback logic, nếu không có navigation_data thì không điều hướng
   };
 
   const getNotificationIcon = (type) => {
@@ -202,7 +209,7 @@ const NotificationsScreen = ({ navigation }) => {
         <Ionicons 
           name={getNotificationIcon(item.notification_type)} 
           size={24} 
-          color={!item.is_read ? "#E53935" : "#777"} 
+          color={!item.is_read ? COLORS.primary : "#777"} 
         />
       </View>
       <View style={styles.notificationContent}>
@@ -230,7 +237,7 @@ const NotificationsScreen = ({ navigation }) => {
         )}
         
         {loading && !refreshing ? (
-          <ActivityIndicator size="large" color="#E53935" />
+          <ActivityIndicator size="large" color={COLORS.primary} />
         ) : notifications.length > 0 ? (
           <FlatList
             data={notifications}
@@ -249,7 +256,7 @@ const NotificationsScreen = ({ navigation }) => {
                 <ActivityIndicator 
                   style={styles.loadingMore} 
                   size="small" 
-                  color="#E53935" 
+                  color={COLORS.primary} 
                 />
               )
             }
@@ -270,26 +277,26 @@ const NotificationsScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1A1A1A',
+    backgroundColor: COLORS.background,
   },
   content: {
     flex: 1,
     padding: 10,
   },
   markAllButton: {
-    backgroundColor: '#262626',
+    backgroundColor: COLORS.cardBg,
     padding: 10,
     borderRadius: 5,
     marginBottom: 10,
     alignItems: 'center',
   },
   markAllText: {
-    color: '#E53935',
+    color: COLORS.primary,
     fontWeight: 'bold',
   },
   notificationItem: {
     flexDirection: 'row',
-    backgroundColor: '#262626',
+    backgroundColor: COLORS.cardBg,
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
@@ -297,7 +304,7 @@ const styles = StyleSheet.create({
   },
   unreadNotification: {
     borderLeftWidth: 3,
-    borderLeftColor: '#E53935',
+    borderLeftColor: COLORS.primary,
     backgroundColor: '#2D2D2D',
   },
   iconContainer: {
@@ -310,13 +317,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   notificationTitle: {
-    color: '#fff',
+    color: COLORS.text,
     fontWeight: 'bold',
     fontSize: 16,
     marginBottom: 4,
   },
   notificationMessage: {
-    color: '#BBB',
+    color: COLORS.textSecondary,
     fontSize: 14,
     marginBottom: 6,
   },

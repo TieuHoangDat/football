@@ -9,6 +9,14 @@ import Constants from "expo-constants";
 // Lấy API URL từ app.json
 const API_URL = Constants.expoConfig.extra.apiUrl;
 
+// Bảng màu
+const COLORS = {
+  primary: "#EEEEEE",    
+  background: "#111",    
+  text: "#EEEEEE",       
+  textSecondary: "#777", 
+};
+
 const Footer = () => {
   const navigation = useNavigation();
   const route = useRoute();
@@ -50,6 +58,13 @@ const Footer = () => {
     { name: "Home", label: "Trang chủ", icon: require("../assets/home.png") },
     { name: "Matches", label: "Trận đấu", icon: require("../assets/matches.png") },
     { name: "Stats", label: "Thống kê", icon: require("../assets/stats.png") },
+    { 
+      name: "Notifications", 
+      label: "Thông báo", 
+      iconType: "ionicon",
+      iconName: (active) => active ? "notifications" : "notifications-outline",
+      badge: unreadCount > 0 ? unreadCount : null
+    },
     { name: "Account", label: "Tài khoản", icon: require("../assets/account.png") },
   ];
 
@@ -58,52 +73,41 @@ const Footer = () => {
       {menuItems.map((item) => (
         <TouchableOpacity
           key={item.name}
-          style={[styles.button, (isActive(item.name) || route.name === item.name) && styles.activeButton]}
+          style={[styles.button, isActive(item.name) && styles.activeButton]}
           onPress={() => navigation.navigate(item.name)}
         >
-          <Image 
-            source={item.icon} 
-            style={[
-              styles.icon, 
-              (isActive(item.name) || route.name === item.name) && styles.activeIcon
-            ]} 
-          />
+          {item.iconType === "ionicon" ? (
+            <View style={styles.iconContainer}>
+              <Ionicons
+                name={item.iconName(isActive(item.name))}
+                size={24}
+                color={isActive(item.name) ? COLORS.primary : COLORS.textSecondary}
+              />
+              {item.badge && (
+                <View style={styles.badgeContainer}>
+                  <Text style={styles.badgeText}>
+                    {item.badge > 99 ? "99+" : item.badge}
+                  </Text>
+                </View>
+              )}
+            </View>
+          ) : (
+            <Image 
+              source={item.icon} 
+              style={[
+                styles.icon, 
+                isActive(item.name) && styles.activeIcon
+              ]} 
+            />
+          )}
           <Text style={[
             styles.text, 
-            (isActive(item.name) || route.name === item.name) && styles.activeText
+            isActive(item.name) && styles.activeText
           ]}>
             {item.label}
           </Text>
         </TouchableOpacity>
       ))}
-
-      <TouchableOpacity
-        style={styles.footerItem}
-        onPress={() => navigation.navigate("Notifications")}
-      >
-        <View style={styles.iconContainer}>
-          <Ionicons
-            name={isActive("Notifications") ? "notifications" : "notifications-outline"}
-            size={24}
-            color={isActive("Notifications") ? "#E53935" : "#fff"}
-          />
-          {unreadCount > 0 && (
-            <View style={styles.badgeContainer}>
-              <Text style={styles.badgeText}>
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </Text>
-            </View>
-          )}
-        </View>
-        <Text
-          style={[
-            styles.footerText,
-            isActive("Notifications") && styles.activeFooterText,
-          ]}
-        >
-          Thông báo
-        </Text>
-      </TouchableOpacity>
     </View>
   );
 };
@@ -129,19 +133,22 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     borderTopWidth: 1,
     borderTopColor: '#2A2A2A',
+    paddingHorizontal: 5,
   },
   button: {
     alignItems: "center",
     paddingVertical: 5,
-    paddingHorizontal: 15,
+    paddingHorizontal: 5,
     borderRadius: 20,
+    flex: 1,
+    maxWidth: 75,
   },
   activeButton: {
     backgroundColor: "#2A2A2A",
   },
   icon: {
-    width: 24,
-    height: 24,
+    width: 22,
+    height: 22,
     tintColor: "#777",
     marginBottom: 4,
   },
@@ -149,34 +156,24 @@ const styles = StyleSheet.create({
     tintColor: "#fff",
   },
   text: {
-    fontSize: 12,
+    fontSize: 9.5,
     color: "#777",
     marginTop: 2,
+    textAlign: "center",
   },
   activeText: {
     color: "#fff",
     fontWeight: "500",
   },
-  footerItem: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  footerText: {
-    color: "#fff",
-    fontSize: 12,
-    marginTop: 4,
-  },
-  activeFooterText: {
-    color: "#E53935",
-  },
   iconContainer: {
     position: 'relative',
+    marginBottom: 4,
   },
   badgeContainer: {
     position: 'absolute',
     top: -5,
     right: -10,
-    backgroundColor: '#E53935',
+    backgroundColor: '#3498db',
     borderRadius: 10,
     minWidth: 20,
     height: 20,

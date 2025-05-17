@@ -1,37 +1,45 @@
 import React from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, Image, TouchableOpacity, Platform, StatusBar } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const Header = () => {
   const navigation = useNavigation();
 
   return (
-    <View style={styles.header}>
-      <Text style={styles.headerText}>Bóng đá</Text>
-      <TouchableOpacity onPress={() => navigation.navigate("Search")}>
-        <Image source={require("../assets/search-normal.png")} style={styles.icon} />
-      </TouchableOpacity>
-    </View>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.header}>
+        <Text style={styles.headerText}>Bóng đá</Text>
+        <TouchableOpacity onPress={() => navigation.navigate("Search")}>
+          <Image source={require("../assets/search-normal.png")} style={styles.icon} />
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    backgroundColor: "#000",
+  },
   header: {
-    backgroundColor: "#000", // Nền đen
-    padding: 15,
-    flexDirection: "row", // Hiển thị ngang
-    alignItems: "center", // Canh giữa theo chiều dọc
-    justifyContent: "space-between", // Chia hai bên
+    backgroundColor: "#000",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   headerText: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#fff", // Chữ trắng
+    color: "#EEEEEE", 
   },
   icon: {
     width: 24,
     height: 24,
-    tintColor: "#fff", // Đổi màu icon thành trắng (nếu là PNG hoặc SVG không màu)
+    tintColor: "#EEEEEE",
   },
 });
 
