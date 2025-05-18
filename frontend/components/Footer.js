@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import Constants from "expo-constants";
+import { NotificationEvents } from "../services/NotificationMonitor";
 
 // Lấy API URL từ app.json
 const API_URL = Constants.expoConfig.extra.apiUrl;
@@ -29,8 +30,19 @@ const Footer = () => {
     const unsubscribe = navigation.addListener('focus', () => {
       fetchUnreadNotifications();
     });
+    
+    // Listen for new notifications
+    const notificationListener = NotificationEvents.addListener(
+      'newNotificationsReceived',
+      () => {
+        fetchUnreadNotifications();
+      }
+    );
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      notificationListener(); // Unsubscribe when component unmounts
+    };
   }, [navigation]);
 
   const fetchUnreadNotifications = async () => {

@@ -301,7 +301,7 @@ router.post("/toggle", async (req, res) => {
             navigationData
           ]
         );
-      }
+    }
     }
 
     return res.json(result);

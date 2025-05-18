@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { View, ActivityIndicator } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -19,12 +19,12 @@ import SearchScreen from "./screens/SearchScreen";
 import TeamDetailsScreen from "./screens/Teams/TeamDetailsScreen";
 import PlayeretailsScreen from "./screens/Teams/PlayerDetailsScreen";
 
-
 const Stack = createNativeStackNavigator();
 
 export default function App() {
   const [loading, setLoading] = useState(true);
   const [initialRoute, setInitialRoute] = useState("Login");
+  const navigationRef = useRef();
 
   useEffect(() => {
     const checkLoginStatus = async () => {
@@ -32,6 +32,7 @@ export default function App() {
       setInitialRoute(token ? "Home" : "Login");
       setLoading(false);
     };
+    
     checkLoginStatus();
   }, []);
 
@@ -44,8 +45,15 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName={initialRoute} screenOptions={{ headerShown: false }}>
+    <NavigationContainer ref={navigationRef}>
+      <Stack.Navigator 
+        initialRouteName={initialRoute} 
+        screenOptions={{ 
+          headerShown: false,
+          gestureEnabled: true,
+          gestureDirection: 'horizontal'
+        }}
+      >
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
         <Stack.Screen name="Home" component={HomeScreen} />
@@ -61,7 +69,6 @@ export default function App() {
         <Stack.Screen name="Search" component={SearchScreen} />
         <Stack.Screen name="TeamDetails" component={TeamDetailsScreen} />
         <Stack.Screen name="PlayerDetails" component={PlayeretailsScreen} />
-
       </Stack.Navigator>
     </NavigationContainer>
   );

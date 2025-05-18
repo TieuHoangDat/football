@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Constants from "expo-constants";
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { useNavigation } from '@react-navigation/native';
+import { 
+  getNotifications, 
+  markNotificationAsRead, 
+  markAllNotificationsAsRead,
+  parseNavigationData
+} from '../services/NotificationService';
 
 // Lấy API URL từ app.json
 const API_URL = Constants.expoConfig.extra.apiUrl;
@@ -20,40 +27,44 @@ const COLORS = {
   border: "#333",        // Viền
 };
 
-const NotificationsScreen = ({ navigation }) => {
+const NotificationsScreen = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [totalUnread, setTotalUnread] = useState(0);
+  const navigation = useNavigation();
 
   useEffect(() => {
     fetchNotifications();
     
-    // Cập nhật thông báo khi màn hình được focus
+    // Đăng ký lắng nghe sự kiện focus từ navigation để cập nhật thông báo
     const unsubscribe = navigation.addListener('focus', () => {
-      setPage(1);
-      fetchNotifications(true);
+      fetchNotifications(1, false);
     });
 
     return unsubscribe;
   }, [navigation]);
 
-  const fetchNotifications = async (refresh = false) => {
+  const fetchNotifications = async (pageNumber = 1, shouldRefresh = false) => {
     try {
+      if (shouldRefresh) {
+        setRefreshing(true);
+      } else if (pageNumber === 1) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+      
       const token = await AsyncStorage.getItem('token');
       if (!token) {
         navigation.replace('Login');
         return;
       }
 
-      const currentPage = refresh ? 1 : page;
-      if (refresh) {
-        setRefreshing(true);
-        setNotifications([]);
-      }
-
+      const currentPage = shouldRefresh ? 1 : pageNumber;
       const response = await axios.get(`${API_URL}/notifications?page=${currentPage}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -69,21 +80,23 @@ const NotificationsScreen = ({ navigation }) => {
       
       setTotalUnread(countUnreadResponse.data.pagination.total);
       
-      if (refresh) {
-        setNotifications(response.data.data);
-        setPage(2);
+      const { data, pagination } = response.data;
+      
+      if (currentPage === 1) {
+        setNotifications(data);
       } else {
-        setNotifications([...notifications, ...response.data.data]);
-        setPage(currentPage + 1);
+        setNotifications(prevNotifications => [...prevNotifications, ...data]);
       }
       
-      setHasMore(currentPage < response.data.pagination.totalPages);
+      setHasMore(pagination.currentPage < pagination.totalPages);
+      setPage(pagination.currentPage);
     } catch (error) {
-      console.error('Lỗi khi tải thông báo:', error);
+      console.error('Error fetching notifications:', error);
       Alert.alert('Lỗi', 'Không thể tải thông báo. Vui lòng thử lại sau.');
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setLoadingMore(false);
     }
   };
 
@@ -119,17 +132,7 @@ const NotificationsScreen = ({ navigation }) => {
 
   const markAllAsRead = async () => {
     try {
-      const token = await AsyncStorage.getItem('token');
-      
-      await axios.put(
-        `${API_URL}/notifications/read/all`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      await markAllNotificationsAsRead();
       
       // Cập nhật UI
       setNotifications(
@@ -146,31 +149,30 @@ const NotificationsScreen = ({ navigation }) => {
     }
   };
 
-  const handleNotificationPress = (notification) => {
-    // Đánh dấu là đã đọc khi nhấn vào
-    if (!notification.is_read) {
-      markAsRead(notification.id);
-    }
-    
-    // Chỉ điều hướng nếu có navigation_data
-    if (notification.navigation_data) {
-      try {
-        // Kiểm tra xem navigation_data đã là object hay chưa
-        let navData = notification.navigation_data;
+  const handleNotificationPress = async (notification) => {
+    try {
+      // Đánh dấu thông báo đã đọc
+      if (!notification.is_read) {
+        await markNotificationAsRead(notification.id);
         
-        // Nếu là string thì parse, nếu không thì sử dụng trực tiếp
-        if (typeof navData === 'string') {
-          navData = JSON.parse(navData);
-        }
-        
-        if (navData.screen && navData.params) {
-          navigation.navigate(navData.screen, navData.params);
-        }
-      } catch (error) {
-        console.error('Lỗi khi xử lý navigation_data:', error);
+        // Cập nhật trạng thái của thông báo trong state
+        setNotifications(prevNotifications =>
+          prevNotifications.map(item =>
+            item.id === notification.id ? { ...item, is_read: true } : item
+          )
+        );
       }
+      
+      // Xử lý điều hướng dựa trên navigation_data của thông báo
+      const navigationData = parseNavigationData(notification);
+      
+      if (navigationData) {
+        const { screen, params } = navigationData;
+        navigation.navigate(screen, params);
+      }
+    } catch (error) {
+      console.error('Error handling notification press:', error);
     }
-    // Không cần fallback logic, nếu không có navigation_data thì không điều hướng
   };
 
   const getNotificationIcon = (type) => {
@@ -197,78 +199,89 @@ const NotificationsScreen = ({ navigation }) => {
     }
   };
 
-  const renderNotificationItem = ({ item }) => (
-    <TouchableOpacity 
-      style={[
-        styles.notificationItem, 
-        !item.is_read && styles.unreadNotification
-      ]}
-      onPress={() => handleNotificationPress(item)}
-    >
-      <View style={styles.iconContainer}>
-        <Ionicons 
-          name={getNotificationIcon(item.notification_type)} 
-          size={24} 
-          color={!item.is_read ? COLORS.primary : "#777"} 
-        />
-      </View>
-      <View style={styles.notificationContent}>
-        <Text style={styles.notificationTitle}>{item.title}</Text>
-        <Text style={styles.notificationMessage}>{item.message}</Text>
-        <Text style={styles.notificationTime}>
-          {new Date(item.created_at).toLocaleString()}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
+  const renderNotificationItem = ({ item }) => {
+    const createdAt = new Date(item.created_at);
+    const formattedDate = `${createdAt.toLocaleDateString()} ${createdAt.toLocaleTimeString()}`;
+    
+    return (
+      <TouchableOpacity
+        style={[styles.notificationItem, item.is_read ? styles.readItem : styles.unreadItem]}
+        onPress={() => handleNotificationPress(item)}
+      >
+        <View style={styles.notificationIcon}>
+          <Ionicons
+            name={getNotificationIcon(item.notification_type)}
+            size={24}
+            color={item.is_read ? "#999" : "#3498db"}
+          />
+        </View>
+        <View style={styles.notificationContent}>
+          <Text style={[styles.notificationTitle, !item.is_read && styles.boldText]}>
+            {item.title}
+          </Text>
+          <Text style={styles.notificationMessage}>{item.message}</Text>
+          <Text style={styles.notificationDate}>{formattedDate}</Text>
+        </View>
+        {!item.is_read && <View style={styles.unreadDot} />}
+      </TouchableOpacity>
+    );
+  };
+
+  const handleRefresh = () => {
+    fetchNotifications(1, true);
+  };
+
+  const handleLoadMore = () => {
+    if (!loadingMore && hasMore) {
+      fetchNotifications(page + 1, false);
+    }
+  };
 
   return (
     <View style={styles.container}>
       <Header title="Thông báo" />
       
-      <View style={styles.content}>
-        {totalUnread > 0 && (
-          <TouchableOpacity 
-            style={styles.markAllButton}
-            onPress={markAllAsRead}
-          >
-            <Text style={styles.markAllText}>Đánh dấu tất cả là đã đọc</Text>
-          </TouchableOpacity>
-        )}
-        
-        {loading && !refreshing ? (
-          <ActivityIndicator size="large" color={COLORS.primary} />
-        ) : notifications.length > 0 ? (
-          <FlatList
-            data={notifications}
-            renderItem={renderNotificationItem}
-            keyExtractor={item => item.id.toString()}
-            onRefresh={() => fetchNotifications(true)}
-            refreshing={refreshing}
-            onEndReached={() => {
-              if (hasMore && !loading) {
-                fetchNotifications();
-              }
-            }}
-            onEndReachedThreshold={0.5}
-            ListFooterComponent={
-              hasMore && (
-                <ActivityIndicator 
-                  style={styles.loadingMore} 
-                  size="small" 
-                  color={COLORS.primary} 
-                />
-              )
-            }
-          />
-        ) : (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="notifications-off-outline" size={64} color="#666" />
-            <Text style={styles.emptyText}>Không có thông báo nào</Text>
-          </View>
-        )}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Thông báo của bạn</Text>
+        <TouchableOpacity onPress={markAllAsRead} style={styles.markAllButton}>
+          <Text style={styles.markAllText}>Đánh dấu tất cả đã đọc</Text>
+        </TouchableOpacity>
       </View>
-
+      
+      {loading ? (
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color="#3498db" />
+        </View>
+      ) : notifications.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="notifications-off-outline" size={64} color="#999" />
+          <Text style={styles.emptyText}>Không có thông báo nào</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={notifications}
+          renderItem={renderNotificationItem}
+          keyExtractor={item => item.id.toString()}
+          contentContainerStyle={styles.listContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={['#3498db']}
+            />
+          }
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={() => (
+            loadingMore ? (
+              <View style={styles.footerLoader}>
+                <ActivityIndicator size="small" color="#3498db" />
+              </View>
+            ) : null
+          )}
+        />
+      )}
+      
       <Footer />
     </View>
   );
@@ -277,59 +290,86 @@ const NotificationsScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#121212',
   },
-  content: {
-    flex: 1,
-    padding: 10,
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fff',
   },
   markAllButton: {
-    backgroundColor: COLORS.cardBg,
-    padding: 10,
-    borderRadius: 5,
-    marginBottom: 10,
-    alignItems: 'center',
+    padding: 8,
   },
   markAllText: {
-    color: COLORS.primary,
-    fontWeight: 'bold',
+    color: '#3498db',
+    fontSize: 14,
+  },
+  listContainer: {
+    flexGrow: 1,
+    paddingBottom: 16,
   },
   notificationItem: {
     flexDirection: 'row',
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-    borderLeftWidth: 0,
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2c2c2c',
+    position: 'relative',
   },
-  unreadNotification: {
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.primary,
-    backgroundColor: '#2D2D2D',
+  readItem: {
+    backgroundColor: '#121212',
   },
-  iconContainer: {
-    marginRight: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+  unreadItem: {
+    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+  },
+  notificationIcon: {
     width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(52, 152, 219, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   notificationContent: {
     flex: 1,
   },
   notificationTitle: {
-    color: COLORS.text,
-    fontWeight: 'bold',
     fontSize: 16,
+    color: '#fff',
     marginBottom: 4,
   },
   notificationMessage: {
-    color: COLORS.textSecondary,
     fontSize: 14,
-    marginBottom: 6,
+    color: '#aaa',
+    marginBottom: 4,
   },
-  notificationTime: {
-    color: '#888',
+  notificationDate: {
     fontSize: 12,
+    color: '#666',
+  },
+  boldText: {
+    fontWeight: 'bold',
+  },
+  unreadDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#3498db',
+    position: 'absolute',
+    top: 16,
+    right: 16,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   emptyContainer: {
     flex: 1,
@@ -337,12 +377,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    color: '#666',
+    color: '#999',
     fontSize: 16,
-    marginTop: 10,
+    marginTop: 16,
   },
-  loadingMore: {
-    paddingVertical: 10,
+  footerLoader: {
+    paddingVertical: 20,
+    alignItems: 'center',
   },
 });
 

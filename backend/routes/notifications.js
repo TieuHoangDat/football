@@ -402,7 +402,7 @@ router.put("/read/all", authMiddleware, (req, res) => {
  * @access  Private (Admin only)
  */
 router.post("/send", authMiddleware, (req, res) => {
-  const { user_id, notification_type, title, message, related_entity_type, related_entity_id, users } = req.body;
+  const { user_id, notification_type, title, message, related_entity_type, related_entity_id, users, navigation_data } = req.body;
   
   // // Kiểm tra quyền admin (có thể thay đổi tùy theo cấu trúc của ứng dụng)
   // if (req.user.role !== 'admin') {
@@ -425,12 +425,13 @@ router.post("/send", authMiddleware, (req, res) => {
       related_entity_type || null,
       related_entity_id || null,
       false, // is_read
-      new Date() // created_at
+      new Date(), // created_at
+      navigation_data || null // Thêm navigation_data
     ]);
     
     const query = `
       INSERT INTO notifications 
-      (user_id, notification_type, title, message, related_entity_type, related_entity_id, is_read, created_at) 
+      (user_id, notification_type, title, message, related_entity_type, related_entity_id, is_read, created_at, navigation_data) 
       VALUES ?
     `;
     
@@ -450,9 +451,9 @@ router.post("/send", authMiddleware, (req, res) => {
   else {
     db.query(
       `INSERT INTO notifications 
-       (user_id, notification_type, title, message, related_entity_type, related_entity_id, is_read, created_at) 
-       VALUES (?, ?, ?, ?, ?, ?, false, NOW())`,
-      [user_id, notification_type, title, message, related_entity_type || null, related_entity_id || null],
+       (user_id, notification_type, title, message, related_entity_type, related_entity_id, is_read, created_at, navigation_data) 
+       VALUES (?, ?, ?, ?, ?, ?, false, NOW(), ?)`,
+      [user_id, notification_type, title, message, related_entity_type || null, related_entity_id || null, navigation_data || null],
       (err, result) => {
         if (err) {
           console.error("Lỗi khi gửi thông báo:", err);
@@ -470,38 +471,110 @@ router.post("/send", authMiddleware, (req, res) => {
 
 /**
  * @route   POST /notifications/broadcast
- * @desc    Gửi thông báo đến tất cả người dùng hoặc nhóm người dùng theo tiêu chí
+ * @desc    Gửi thông báo chung đến tất cả người dùng theo tiêu chí (chỉ cho thông báo về trận đấu, tin tức, cầu thủ)
  * @access  Private (Admin only)
  */
 router.post("/broadcast", authMiddleware, (req, res) => {
-  const { notification_type, title, message, related_entity_type, related_entity_id, target } = req.body;
+  const { 
+    notification_type, 
+    title, 
+    message, 
+    related_entity_type, 
+    related_entity_id, 
+    target, 
+    notification_type_setting,
+    navigation_data
+  } = req.body;
   
   // Kiểm tra quyền admin
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ error: "Không có quyền truy cập" });
-  }
+  // if (req.user.role !== 'admin') {
+  //   return res.status(403).json({ error: "Không có quyền truy cập" });
+  // }
   
   // Kiểm tra thông tin bắt buộc
   if (!notification_type || !title || !message) {
     return res.status(400).json({ error: "Thiếu thông tin bắt buộc" });
   }
+
+  // Danh sách các loại thông báo được phép broadcast
+  const allowedNotificationTypes = [
+    'MATCH_START', 'MATCH_END', 'MATCH_REMINDER', 
+    'GOAL', 'RED_CARD', 'PENALTY', 'LINEUP_ANNOUNCED',
+    'TEAM_NEWS', 'PLAYER_INJURY', 'PLAYER_STATS',
+    'TRANSFER_NEWS', 'COMPETITION_UPDATE'
+  ];
+
+  // Kiểm tra loại thông báo có thuộc danh sách được phép
+  if (!allowedNotificationTypes.includes(notification_type)) {
+    return res.status(400).json({ 
+      error: "Loại thông báo không hợp lệ cho broadcast. Chỉ cho phép thông báo chung về trận đấu, tin tức và cầu thủ" 
+    });
+  }
   
-  let userQuery = "SELECT id FROM users";
-  let queryParams = [];
+  // Ánh xạ loại thông báo với trường cài đặt tương ứng trong notification_settings
+  const getSettingFieldByType = (type) => {
+    const mapping = {
+      'MATCH_START': 'match_start',
+      'MATCH_END': 'match_end',
+      'GOAL': 'goals',
+      'RED_CARD': 'red_cards',
+      'PENALTY': 'penalties',
+      'LINEUP_ANNOUNCED': 'lineups',
+      'TEAM_NEWS': 'team_news',
+      'PLAYER_INJURY': 'player_injuries',
+      'TRANSFER_NEWS': 'transfer_news',
+      'MATCH_REMINDER': 'fixture_reminders',
+      'COMPETITION_UPDATE': 'competition_updates',
+      'PLAYER_STATS': 'player_stats'
+      // Không bao gồm các loại thông báo tương tác cá nhân như comment_likes, comment_replies, mentions
+    };
+    
+    return mapping[type] || null;
+  };
   
-  // Lọc người dùng theo tiêu chí nếu có
+  // Lấy trường cài đặt tương ứng với loại thông báo
+  let settingField = notification_type_setting || getSettingFieldByType(notification_type);
+  
+  // Nếu không tìm thấy cài đặt phù hợp
+  if (!settingField) {
+    return res.status(400).json({ error: "Không tìm thấy cài đặt phù hợp cho loại thông báo này" });
+  }
+
+  // Xây dựng query để lấy người dùng phù hợp
+  let userQuery;
+  let queryParams;
+  
+  // Nếu target được chỉ định, thêm điều kiện lọc theo subscription
   if (target) {
-    // Các tiêu chí có thể là:
-    // - subscription_type và entity_id: gửi cho người dùng đã đăng ký theo dõi đối tượng cụ thể
     if (target.subscription_type && target.entity_id) {
       userQuery = `
-        SELECT user_id as id FROM user_subscriptions 
-        WHERE subscription_type = ? AND entity_id = ?
+        SELECT DISTINCT u.id 
+        FROM users u
+        JOIN notification_settings ns ON u.id = ns.user_id
+        JOIN user_subscriptions us ON u.id = us.user_id
+        WHERE ns.push_enabled = TRUE
+        ${settingField ? `AND ns.${settingField} = TRUE` : ''}
+        AND us.subscription_type = ? 
+        AND us.entity_id = ?
       `;
       queryParams = [target.subscription_type, target.entity_id];
     }
-    // Có thể thêm các tiêu chí khác tùy theo yêu cầu
+  } else {
+    // Nếu không có target, vẫn lọc theo notification settings
+    userQuery = `
+      SELECT DISTINCT u.id 
+      FROM users u
+      JOIN notification_settings ns ON u.id = ns.user_id
+      WHERE ns.push_enabled = TRUE
+      ${settingField ? `AND ns.${settingField} = TRUE` : ''}
+    `;
+    queryParams = [];
   }
+  
+  // Log SQL query cho việc lấy danh sách người dùng
+  console.log('=== DEBUG BROADCAST NOTIFICATION ===');
+  console.log('USER QUERY:', userQuery);
+  console.log('QUERY PARAMS:', queryParams);
   
   // Lấy danh sách người dùng theo tiêu chí
   db.query(userQuery, queryParams, (err, users) => {
@@ -510,11 +583,46 @@ router.post("/broadcast", authMiddleware, (req, res) => {
       return res.status(500).json({ error: "Lỗi server" });
     }
     
+    console.log(`Found ${users.length} users for notification broadcast`);
+    
     if (users.length === 0) {
       return res.status(404).json({ 
         message: "Không tìm thấy người dùng phù hợp với tiêu chí" 
       });
     }
+    
+    // Sử dụng navigation_data từ request body nếu được cung cấp
+    let navigationData = navigation_data;
+
+    // Nếu không có navigation_data trong request body, tạo từ related_entity_type và related_entity_id
+    // if (!navigationData && related_entity_type && related_entity_id) {
+    //   // Ánh xạ loại thực thể với màn hình và tham số
+    //   const screenMapping = {
+    //     'MATCH': { screen: 'MatchStats', paramKey: 'matchId' },
+    //     'TEAM': { screen: 'TeamDetails', paramKey: 'teamId' },
+    //     'PLAYER': { screen: 'PlayerDetails', paramKey: 'playerId' },
+    //     'COMMENT': { screen: 'Comments', paramKey: 'commentId' },
+    //     'NEWS': { screen: 'NewsDetail', paramKey: 'newsId' }
+    //   };
+      
+    //   const mappedScreen = screenMapping[related_entity_type];
+    //   if (mappedScreen) {
+    //     const params = { [mappedScreen.paramKey]: related_entity_id };
+        
+    //     // Thêm tham số bổ sung cho comment
+    //     if (related_entity_type === 'COMMENT' && req.body.newsId) {
+    //       params.newsId = req.body.newsId;
+    //       params.scrollToComment = true;
+    //     }
+        
+    //     navigationData = JSON.stringify({
+    //       screen: mappedScreen.screen,
+    //       params
+    //     });
+    //   }
+    // }
+    
+    console.log('NAVIGATION DATA:', navigationData);
     
     // Chuẩn bị dữ liệu thông báo cho nhiều người dùng
     const notifications = users.map(user => [
@@ -525,15 +633,21 @@ router.post("/broadcast", authMiddleware, (req, res) => {
       related_entity_type || null,
       related_entity_id || null,
       false, // is_read
-      new Date() // created_at
+      new Date(), // created_at
+      navigationData // navigation_data
     ]);
     
     // Gửi thông báo cho tất cả người dùng
     const query = `
       INSERT INTO notifications 
-      (user_id, notification_type, title, message, related_entity_type, related_entity_id, is_read, created_at) 
+      (user_id, notification_type, title, message, related_entity_type, related_entity_id, is_read, created_at, navigation_data) 
       VALUES ?
     `;
+    
+    console.log('INSERT QUERY:', query);
+    console.log('Total notifications to insert:', notifications.length);
+    console.log('First notification sample:', notifications.length > 0 ? notifications[0] : 'No notifications');
+    console.log('=== END DEBUG BROADCAST NOTIFICATION ===');
     
     db.query(query, [notifications], (err, result) => {
       if (err) {

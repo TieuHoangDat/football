@@ -148,6 +148,7 @@ const AccountScreen = ({ navigation }) => {
 
   const handleLogout = async () => {
     await AsyncStorage.removeItem("token");
+    await AsyncStorage.removeItem("email");
     Alert.alert("Đã đăng xuất!");
     navigation.replace("Login");
   };
