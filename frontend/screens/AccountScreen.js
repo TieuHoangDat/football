@@ -213,6 +213,15 @@ const AccountScreen = ({ navigation }) => {
           </View>
         </View>
 
+          {/* Cụm quản lý */}
+          <TouchableOpacity
+            style={styles.manageButton}
+            onPress={() => navigation.navigate('Manage')}
+          >
+            <Ionicons name="settings-outline" size={18} color="#fff" style={{ marginRight: 6 }} />
+            <Text style={styles.manageButtonText}>Quản lý</Text>
+          </TouchableOpacity>
+
         <View style={styles.section}>
           <View style={styles.sectionTitleContainer}>
             <Ionicons name="notifications" size={24} color={COLORS.primary} />
@@ -361,7 +370,6 @@ const AccountScreen = ({ navigation }) => {
           <Text style={styles.buttonText}>Đăng xuất</Text>
         </TouchableOpacity>
       </ScrollView>
-
       <Footer />
     </View>
   );
@@ -380,7 +388,7 @@ const styles = StyleSheet.create({
     paddingBottom: 80,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 12,
     backgroundColor: COLORS.cardBg,
     borderRadius: 12,
     padding: 16,
@@ -487,12 +495,12 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontWeight: '500',
   },
-  logoutButton: {
+ logoutButton: {
     backgroundColor: "#e74c3c",
     padding: 14,
     borderRadius: 8,
     alignItems: "center",
-    marginVertical: 20,
+    marginVertical: 8,
     flexDirection: 'row',
     justifyContent: 'center',
   },
@@ -507,6 +515,29 @@ const styles = StyleSheet.create({
   loader: {
     padding: 20,
   },
+  manageButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: COLORS.primary,
+  paddingVertical: 14,
+  borderRadius: 10,
+  // marginTop: 12,
+  marginBottom: 12,
+  width: '100%',
+  alignSelf: 'center',
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.12,
+  shadowRadius: 4,
+  elevation: 2,
+},
+manageButtonText: {
+  color: '#fff',
+  fontWeight: 'bold',
+  fontSize: 16,
+  letterSpacing: 0.5,
+},
 });
 
 export default AccountScreen;
