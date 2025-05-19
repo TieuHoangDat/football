@@ -76,7 +76,6 @@ router.post("/logout", (req, res) => {
     res.json({ message: "Đã đăng xuất" });
 });
 
-
 // Lấy thông tin người dùng
 router.get("/me", async (req, res) => {
     try {
@@ -100,6 +99,143 @@ router.get("/me", async (req, res) => {
                         .json({ error: "Không tìm thấy người dùng" });
                 }
                 res.json(results[0]);
+            }
+        );
+    } catch (error) {
+        res.status(401).json({ error: "Token không hợp lệ" });
+    }
+});
+
+// Lấy danh sách người dùng (chỉ admin)
+router.get("/users", async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ error: "Không có token xác thực" });
+        }
+
+        const decoded = jwt.verify(token, SECRET_KEY);
+
+        // Kiểm tra quyền admin
+        db.query(
+            "SELECT role FROM users WHERE id = ?",
+            [decoded.id],
+            (err, results) => {
+                if (
+                    err ||
+                    results.length === 0 ||
+                    results[0].role !== "admin"
+                ) {
+                    return res
+                        .status(403)
+                        .json({ error: "Không có quyền truy cập" });
+                }
+
+                // Lấy danh sách người dùng
+                db.query(
+                    "SELECT id, name, email, role, can_comment FROM users",
+                    (err, users) => {
+                        if (err) {
+                            return res
+                                .status(500)
+                                .json({ error: "Lỗi server" });
+                        }
+                        res.json(users);
+                    }
+                );
+            }
+        );
+    } catch (error) {
+        res.status(401).json({ error: "Token không hợp lệ" });
+    }
+});
+
+// Cập nhật thông tin người dùng (chỉ admin)
+router.put("/users/:id", async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ error: "Không có token xác thực" });
+        }
+
+        const decoded = jwt.verify(token, SECRET_KEY);
+
+        // Kiểm tra quyền admin
+        db.query(
+            "SELECT role FROM users WHERE id = ?",
+            [decoded.id],
+            (err, results) => {
+                if (
+                    err ||
+                    results.length === 0 ||
+                    results[0].role !== "admin"
+                ) {
+                    return res
+                        .status(403)
+                        .json({ error: "Không có quyền truy cập" });
+                }
+
+                const { name, email, role, can_comment } = req.body;
+                const userId = req.params.id;
+
+                db.query(
+                    "UPDATE users SET name = ?, email = ?, role = ?, can_comment = ? WHERE id = ?",
+                    [name, email, role, can_comment, userId],
+                    (err, result) => {
+                        if (err) {
+                            return res
+                                .status(500)
+                                .json({ error: "Lỗi khi cập nhật" });
+                        }
+                        res.json({ message: "Cập nhật thành công" });
+                    }
+                );
+            }
+        );
+    } catch (error) {
+        res.status(401).json({ error: "Token không hợp lệ" });
+    }
+});
+
+// Xóa người dùng (chỉ admin)
+router.delete("/users/:id", async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ error: "Không có token xác thực" });
+        }
+
+        const decoded = jwt.verify(token, SECRET_KEY);
+
+        // Kiểm tra quyền admin
+        db.query(
+            "SELECT role FROM users WHERE id = ?",
+            [decoded.id],
+            (err, results) => {
+                if (
+                    err ||
+                    results.length === 0 ||
+                    results[0].role !== "admin"
+                ) {
+                    return res
+                        .status(403)
+                        .json({ error: "Không có quyền truy cập" });
+                }
+
+                const userId = req.params.id;
+
+                db.query(
+                    "DELETE FROM users WHERE id = ?",
+                    [userId],
+                    (err, result) => {
+                        if (err) {
+                            return res
+                                .status(500)
+                                .json({ error: "Lỗi khi xóa" });
+                        }
+                        res.json({ message: "Xóa thành công" });
+                    }
+                );
             }
         );
     } catch (error) {

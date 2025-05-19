@@ -3,14 +3,26 @@ CREATE TABLE users (
   name VARCHAR(100) NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
   password VARCHAR(255) NOT NULL,
-  role ENUM('user', 'admin') NOT NULL DEFAULT 'user'
+  role ENUM('user', 'admin') NOT NULL DEFAULT 'user',
+  can_comment BOOLEAN NOT NULL DEFAULT TRUE
 );
 
-INSERT INTO users (name, email, password, role) VALUES
-('Nguyễn Văn A', 'nguyenvana@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG', 'admin'),
-('Trần Thị B', 'tranthib@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG', 'user'),
-('Lê Văn C', 'levanc@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG', 'user'),
-('Phạm Thị D', 'phamthid@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG', 'user');
+INSERT INTO users (name, email, password, role, can_comment) VALUES
+('Nguyễn Văn A', 'nguyenvana@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG', 'admin', TRUE),
+('Trần Thị B', 'tranthib@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG', 'user', TRUE),
+('Lê Văn C', 'levanc@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG', 'user', FALSE),
+('Phạm Thị D', 'phamthid@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG', 'user', TRUE),
+('Đỗ Mạnh E', 'domanhe@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG', 'user', TRUE),
+('Ngô Thị F', 'ngothif@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG', 'user', TRUE),
+('Bùi Văn G', 'buivang@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG', 'admin', TRUE),
+('Phan Thị H', 'phanthih@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG', 'user', FALSE),
+('Vũ Văn I', 'vuvani@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG', 'user', TRUE),
+('Tô Thị J', 'tothij@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG', 'user', TRUE),
+('Hoàng Văn K', 'hoangvank@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG', 'admin', TRUE),
+('Đặng Thị L', 'dangthil@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG', 'user', FALSE),
+('Mai Văn M', 'maivanm@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG', 'user', TRUE),
+('Trịnh Thị N', 'trinhthin@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG', 'user', TRUE);
+
 
 
 

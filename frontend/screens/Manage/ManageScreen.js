@@ -8,7 +8,9 @@ const ManageScreen = ({ navigation }) => {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.navigate("Account")}>
+                <TouchableOpacity
+                    onPress={() => navigation.navigate("Account")}
+                >
                     <Image
                         source={require("../../assets/arrow-left.png")}
                         style={styles.icon}
@@ -17,7 +19,10 @@ const ManageScreen = ({ navigation }) => {
                 <Text style={styles.headerTitle}>Giao diện quản lý</Text>
             </View>
             <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.button}>
+                <TouchableOpacity
+                    style={styles.button}
+                    onPress={() => navigation.navigate("UpdateUser")}
+                >
                     <Ionicons
                         name="people-outline"
                         size={22}
@@ -26,7 +31,10 @@ const ManageScreen = ({ navigation }) => {
                     />
                     <Text style={styles.buttonText}>Quản lý người dùng</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.button}  onPress={() => navigation.navigate("AddMatch")} >
+                <TouchableOpacity
+                    style={styles.button}
+                    onPress={() => navigation.navigate("AddMatch")}
+                >
                     <Ionicons
                         name="add-circle-outline"
                         size={22}
@@ -35,7 +43,10 @@ const ManageScreen = ({ navigation }) => {
                     />
                     <Text style={styles.buttonText}>Thêm trận đấu</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("UpdateMatch")}>
+                <TouchableOpacity
+                    style={styles.button}
+                    onPress={() => navigation.navigate("UpdateMatch")}
+                >
                     <Ionicons
                         name="create-outline"
                         size={22}
