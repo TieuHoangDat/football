@@ -129,63 +129,63 @@ export const registerForPushNotificationsAsync = async () => {
 /**
  * Test gửi thông báo cục bộ (ngay trên thiết bị)
  */
-export const sendLocalNotification = async () => {
-  try {
-    if (isWeb) {
-      console.log('Web không hỗ trợ push notifications');
-      return;
-    }
+// export const sendLocalNotification = async () => {
+//   try {
+//     if (isWeb) {
+//       console.log('Web không hỗ trợ push notifications');
+//       return;
+//     }
     
-    console.log('Scheduling local notification...');
+//     console.log('Scheduling local notification...');
     
-    // Cách 1: Lên lịch thông báo với trigger
-    const notificationId = await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "Thông báo test (Scheduled)",
-        body: "Đây là thông báo test gửi từ thiết bị với lịch.",
-        data: { screen: "Home" },
-        sound: 'default',
-        priority: 'high',
-        vibrate: [0, 250, 250, 250],
-        badge: 1,
-      },
-      trigger: { seconds: 2 },
-    });
-    console.log('Local notification scheduled with ID:', notificationId);
+//     // Cách 1: Lên lịch thông báo với trigger
+//     const notificationId = await Notifications.scheduleNotificationAsync({
+//       content: {
+//         title: "Thông báo test (Scheduled)",
+//         body: "Đây là thông báo test gửi từ thiết bị với lịch.",
+//         data: { screen: "Home" },
+//         sound: 'default',
+//         priority: 'high',
+//         vibrate: [0, 250, 250, 250],
+//         badge: 1,
+//       },
+//       trigger: { seconds: 2 },
+//     });
+//     console.log('Local notification scheduled with ID:', notificationId);
     
-    // Cách 2: Thông báo tức thời có âm thanh và rung với channel "important"
-    setTimeout(async () => {
-      const immediateId = await Notifications.presentNotificationAsync({
-        title: "Thông báo test (Immediate)",
-        body: "Đây là thông báo test hiển thị ngay lập tức VỚI ÂM THANH.",
-        data: { screen: "Home" },
-        sound: 'default',
-        priority: 'max',
-        android: {
-          channelId: 'important',
-          sound: true,
-          vibrate: true,
-          priority: 'max',
-          sticky: false,
-        },
-        ios: {
-          sound: true, 
-        },
-      });
-      console.log('Immediate notification presented with ID:', immediateId);
+//     // Cách 2: Thông báo tức thời có âm thanh và rung với channel "important"
+//     setTimeout(async () => {
+//       const immediateId = await Notifications.presentNotificationAsync({
+//         title: "Thông báo test (Immediate)",
+//         body: "Đây là thông báo test hiển thị ngay lập tức VỚI ÂM THANH.",
+//         data: { screen: "Home" },
+//         sound: 'default',
+//         priority: 'max',
+//         android: {
+//           channelId: 'important',
+//           sound: true,
+//           vibrate: true,
+//           priority: 'max',
+//           sticky: false,
+//         },
+//         ios: {
+//           sound: true, 
+//         },
+//       });
+//       console.log('Immediate notification presented with ID:', immediateId);
       
-      // Cách 3: Hiển thị Alert thủ công
-      Alert.alert(
-        "Thông báo test (Alert)",
-        "Đây là thông báo test hiển thị qua Alert.",
-        [{ text: "OK", onPress: () => console.log("Alert OK pressed") }]
-      );
-    }, 4000);
+//       // Cách 3: Hiển thị Alert thủ công
+//       Alert.alert(
+//         "Thông báo test (Alert)",
+//         "Đây là thông báo test hiển thị qua Alert.",
+//         [{ text: "OK", onPress: () => console.log("Alert OK pressed") }]
+//       );
+//     }, 4000);
     
-  } catch (error) {
-    console.error('Error sending local notification:', error);
-  }
-};
+//   } catch (error) {
+//     console.error('Error sending local notification:', error);
+//   }
+// };
 
 /**
  * Gửi token thiết bị lên server (chỉ gọi khi cần)
@@ -200,13 +200,19 @@ export const sendPushTokenToServer = async (token) => {
       throw new Error('User not authenticated');
     }
     
-    const response = await fetch(`${API_URL}/users/push-token`, {
+    // Lấy thông tin thiết bị
+    const deviceName = await getDeviceName();
+    
+    const response = await fetch(`${API_URL}/notifications/tokens`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${userToken}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ push_token: token }),
+      body: JSON.stringify({ 
+        token: token,
+        device_name: deviceName
+      }),
     });
     
     if (!response.ok) {
@@ -214,10 +220,32 @@ export const sendPushTokenToServer = async (token) => {
     }
     
     const result = await response.json();
+    console.log('Token registered successfully:', result);
     return result;
   } catch (error) {
     console.error('Error sending push token to server:', error);
     throw error;
+  }
+};
+
+/**
+ * Lấy thông tin thiết bị hiện tại
+ * @returns {Promise<string>} Tên thiết bị
+ */
+const getDeviceName = async () => {
+  if (isWeb) return 'Web Browser';
+  
+  try {
+    let deviceName = Device.modelName || '';
+    
+    // Thêm hệ điều hành
+    const os = Platform.OS === 'ios' ? 'iOS' : Platform.OS === 'android' ? 'Android' : 'Unknown';
+    const osVersion = Platform.Version || '';
+    
+    return `${deviceName} (${os} ${osVersion})`;
+  } catch (error) {
+    console.error('Error getting device info:', error);
+    return 'Unknown Device';
   }
 };
 
@@ -283,16 +311,15 @@ export const setupForegroundNotificationHandler = () => {
   const subscription = Notifications.addNotificationReceivedListener(notification => {
     console.log('Foreground notification received:', notification);
     
-    // Hiển thị Alert khi nhận được thông báo trong foreground
     const title = notification.request.content.title;
     const body = notification.request.content.body;
     
     // Sử dụng Alert để hiển thị thông báo trong ứng dụng
-    Alert.alert(
-      title || 'Thông báo mới',
-      body || 'Bạn có một thông báo mới',
-      [{ text: 'OK', onPress: () => console.log('OK Pressed') }]
-    );
+    // Alert.alert(
+    //   title || 'Thông báo mới',
+    //   body || 'Bạn có một thông báo mới',
+    //   [{ text: 'OK', onPress: () => console.log('OK Pressed') }]
+    // );
   });
   
   return subscription;

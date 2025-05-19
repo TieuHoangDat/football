@@ -602,30 +602,30 @@ router.post("/broadcast", authMiddleware, (req, res) => {
         : navigation_data;
     } 
     // Nếu không có navigation_data nhưng có related_entity_type và related_entity_id, tạo dữ liệu điều hướng
-    else if (related_entity_type && related_entity_id) {
-      // Ánh xạ loại thực thể với màn hình tương ứng trong ứng dụng mobile
-      const screenMapping = {
-        'MATCH': { screen: 'MatchStats', paramKey: 'matchId' },
-        'TEAM': { screen: 'TeamDetails', paramKey: 'teamId' },
-        'PLAYER': { screen: 'PlayerDetails', paramKey: 'playerId' },
-        'COMMENT': { screen: 'Comments', paramKey: 'commentId' },
-        'NEWS': { screen: 'NewsDetail', paramKey: 'newsId' }
-      };
+    // else if (related_entity_type && related_entity_id) {
+    //   // Ánh xạ loại thực thể với màn hình tương ứng trong ứng dụng mobile
+    //   const screenMapping = {
+    //     'MATCH': { screen: 'MatchStats', paramKey: 'matchId' },
+    //     'TEAM': { screen: 'TeamDetails', paramKey: 'teamId' },
+    //     'PLAYER': { screen: 'PlayerDetails', paramKey: 'playerId' },
+    //     'COMMENT': { screen: 'Comments', paramKey: 'commentId' },
+    //     'NEWS': { screen: 'NewsDetail', paramKey: 'newsId' }
+    //   };
       
-      const mappedScreen = screenMapping[related_entity_type];
-      if (mappedScreen) {
-        pushData = {
-          screen: mappedScreen.screen,
-          params: { [mappedScreen.paramKey]: related_entity_id }
-        };
+    //   const mappedScreen = screenMapping[related_entity_type];
+    //   if (mappedScreen) {
+    //     pushData = {
+    //       screen: mappedScreen.screen,
+    //       params: { [mappedScreen.paramKey]: related_entity_id }
+    //     };
         
-        // Thêm tham số bổ sung cho comment
-        if (related_entity_type === 'COMMENT' && req.body.newsId) {
-          pushData.params.newsId = req.body.newsId;
-          pushData.params.scrollToComment = true;
-        }
-      }
-    }
+    //     // Thêm tham số bổ sung cho comment
+    //     if (related_entity_type === 'COMMENT' && req.body.newsId) {
+    //       pushData.params.newsId = req.body.newsId;
+    //       pushData.params.scrollToComment = true;
+    //     }
+    //   }
+    // }
     
     // Chuẩn bị dữ liệu thông báo cho nhiều người dùng
     const notifications = users.map(user => [

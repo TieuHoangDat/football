@@ -32,16 +32,72 @@ const Footer = () => {
     });
     
     // Listen for new notifications
-    const notificationListener = NotificationEvents.addListener(
-      'newNotificationsReceived',
-      () => {
-        fetchUnreadNotifications();
+    let subscriptions = [];
+    
+    try {
+      // Sử dụng NotificationEvents từ NotificationMonitor
+      const notificationSubscription = NotificationEvents.addListener(
+        'newNotificationsReceived',
+        (data) => {
+          console.log('Footer: Received notification event', data);
+          if (data && data.count !== undefined) {
+            setUnreadCount(data.count);
+          } else {
+            fetchUnreadNotifications();
+          }
+        }
+      );
+      subscriptions.push(notificationSubscription);
+      console.log('Footer: Subscribed to NotificationEvents');
+      
+      // Nếu có global.notificationEventEmitter, đăng ký thêm để đảm bảo không bỏ lỡ thông báo
+      if (global.notificationEventEmitter) {
+        try {
+          const globalSubscription = global.notificationEventEmitter.addListener(
+            'onNotificationCountChanged',
+            (count) => {
+              console.log('Footer: Received global notification event', count);
+              setUnreadCount(typeof count === 'number' ? count : 0);
+            }
+          );
+          subscriptions.push(globalSubscription);
+          console.log('Footer: Subscribed to global notification events');
+        } catch (error) {
+          console.error('Footer: Error subscribing to global notification events', error);
+        }
+      } else {
+        console.log('Footer: No global notification emitter found');
       }
-    );
+    } catch (error) {
+      console.error('Footer: Error subscribing to notification events', error);
+    }
+
+    // Kiểm tra số lượng thông báo từ AsyncStorage khi component mounted
+    const checkStoredCount = async () => {
+      try {
+        const storedCount = await AsyncStorage.getItem('unreadNotificationCount');
+        if (storedCount !== null) {
+          setUnreadCount(parseInt(storedCount, 10));
+        }
+      } catch (error) {
+        console.error('Error reading stored notification count:', error);
+      }
+    };
+    
+    checkStoredCount();
 
     return () => {
       unsubscribe();
-      notificationListener(); // Unsubscribe when component unmounts
+      
+      // Hủy đăng ký tất cả sự kiện khi component unmount
+      subscriptions.forEach(subscription => {
+        try {
+          subscription.remove();
+        } catch (error) {
+          console.error('Footer: Error unsubscribing from events', error);
+        }
+      });
+      console.log('Footer: Unsubscribed from all notification events');
     };
   }, [navigation]);
 

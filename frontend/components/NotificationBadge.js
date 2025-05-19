@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getUnreadCount } from '../services/NotificationService';
 
 const NotificationBadge = () => {
@@ -15,8 +16,37 @@ const NotificationBadge = () => {
     // Thiết lập interval để cập nhật số lượng thông báo chưa đọc
     const interval = setInterval(fetchUnreadCount, 60000); // 1 phút
     
-    // Xóa interval khi component unmount
-    return () => clearInterval(interval);
+    // Lắng nghe sự kiện cập nhật từ push notification
+    let subscription = null;
+    if (global.notificationEventEmitter) {
+      try {
+        subscription = global.notificationEventEmitter.addListener(
+          'onNotificationCountChanged',
+          (count) => {
+            console.log('Notification badge updating from event:', count);
+            setUnreadCount(count);
+          }
+        );
+        console.log('NotificationBadge: Subscribed to notification events');
+      } catch (error) {
+        console.error('NotificationBadge: Error subscribing to notification events', error);
+      }
+    } else {
+      console.log('NotificationBadge: No event emitter found');
+    }
+    
+    // Xóa listener và interval khi component unmount
+    return () => {
+      clearInterval(interval);
+      if (subscription) {
+        try {
+          subscription.remove();
+          console.log('NotificationBadge: Unsubscribed from notification events');
+        } catch (error) {
+          console.error('NotificationBadge: Error unsubscribing from events', error);
+        }
+      }
+    };
   }, []);
 
   // Đăng ký lắng nghe sự kiện focus từ navigation để cập nhật thông báo
@@ -28,11 +58,30 @@ const NotificationBadge = () => {
     return unsubscribe;
   }, [navigation]);
 
+  // Kiểm tra AsyncStorage cho số lượng thông báo đã lưu trước đó
+  useEffect(() => {
+    const checkStoredCount = async () => {
+      try {
+        const storedCount = await AsyncStorage.getItem('unreadNotificationCount');
+        if (storedCount !== null) {
+          setUnreadCount(parseInt(storedCount, 10));
+        }
+      } catch (error) {
+        console.error('Error reading stored notification count:', error);
+      }
+    };
+    
+    checkStoredCount();
+  }, []);
+
   // Hàm lấy số lượng thông báo chưa đọc
   const fetchUnreadCount = async () => {
     try {
       const count = await getUnreadCount();
       setUnreadCount(count);
+      
+      // Lưu số lượng thông báo vào AsyncStorage
+      await AsyncStorage.setItem('unreadNotificationCount', String(count));
     } catch (error) {
       console.error('Error fetching unread count:', error);
     }

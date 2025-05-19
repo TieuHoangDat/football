@@ -6,7 +6,7 @@ import Constants from "expo-constants";
 import { Ionicons } from "@expo/vector-icons";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import { sendLocalNotification } from "../services/PushNotificationService";
+// import { sendLocalNotification } from "../services/PushNotificationService";
 
 // Kích hoạt LayoutAnimation cho Android
 if (Platform.OS === 'android') {
@@ -155,25 +155,25 @@ const AccountScreen = ({ navigation }) => {
   };
 
   // Debug function to test notifications
-  const handleDebugTest = async () => {
-    try {
-      // Gửi thông báo cục bộ
-      console.log("Sending debug local notification...");
-      await sendLocalNotification();
-      Alert.alert("Debug", "Đã gửi thông báo debug. Hãy kiểm tra thiết bị của bạn!");
+  // const handleDebugTest = async () => {
+  //   try {
+  //     // Gửi thông báo cục bộ
+  //     console.log("Sending debug local notification...");
+  //     await sendLocalNotification();
+  //     Alert.alert("Debug", "Đã gửi thông báo debug. Hãy kiểm tra thiết bị của bạn!");
       
-      // Hiển thị token đã lưu
-      const token = await AsyncStorage.getItem('pushToken');
-      console.log("Current push token:", token);
+  //     // Hiển thị token đã lưu
+  //     const token = await AsyncStorage.getItem('pushToken');
+  //     console.log("Current push token:", token);
       
-      if (token) {
-        Alert.alert("Token", `Push Token: ${token}`);
-      }
-    } catch (error) {
-      console.error("Error in debug test:", error);
-      Alert.alert("Lỗi", "Có lỗi xảy ra khi test. Xem console để biết thêm chi tiết.");
-    }
-  };
+  //     if (token) {
+  //       Alert.alert("Token", `Push Token: ${token}`);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error in debug test:", error);
+  //     Alert.alert("Lỗi", "Có lỗi xảy ra khi test. Xem console để biết thêm chi tiết.");
+  //   }
+  // };
 
   const SettingItem = ({ title, field, value, icon }) => (
     <View style={styles.settingItem}>
@@ -380,12 +380,12 @@ const AccountScreen = ({ navigation }) => {
         </View>
         
         {/* Debug button - only in development */}
-        {__DEV__ && (
+        {/* {__DEV__ && (
           <TouchableOpacity style={styles.debugButton} onPress={handleDebugTest}>
             <Ionicons name="bug-outline" size={20} color="white" style={styles.logoutIcon} />
             <Text style={styles.buttonText}>Debug Test Notification</Text>
           </TouchableOpacity>
-        )}
+        )} */}
         
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={20} color="white" style={styles.logoutIcon} />

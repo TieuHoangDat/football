@@ -4,7 +4,10 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from 'expo-notifications';
-import { registerForPushNotificationsAsync, subscribeToNotificationResponse, checkNotificationPermissions, sendLocalNotification, setupForegroundNotificationHandler } from "./services/PushNotificationService";
+import { EventEmitter } from 'fbemitter';
+import { registerForPushNotificationsAsync, subscribeToNotificationResponse, checkNotificationPermissions, setupForegroundNotificationHandler, sendPushTokenToServer } from "./services/PushNotificationService";
+import { refreshNotificationsOnPush, setupNotificationEventEmitter } from "./services/NotificationService";
+import { NotificationEvents } from "./services/NotificationMonitor";
 import LoginScreen from "./screens/Auth/LoginScreen";
 import RegisterScreen from "./screens/Auth/RegisterScreen";
 import HomeScreen from "./screens/News/HomeScreen";
@@ -54,10 +57,22 @@ export default function App() {
   const notificationResponseSubscription = useRef();
   const notificationListener = useRef();
   const foregroundNotificationSubscription = useRef();
+  const emitterRef = useRef(null);
   
   // Kiểm tra xem có đang chạy trên web không
   const isWeb = Platform.OS === 'web';
 
+  // Thiết lập EventEmitter cho thông báo
+  useEffect(() => {
+    // Khởi tạo event emitter cho thông báo sử dụng fbemitter
+    if (!emitterRef.current) {
+      emitterRef.current = new EventEmitter();
+      setupNotificationEventEmitter(emitterRef.current);
+      console.log('EventEmitter initialized with fbemitter');
+    }
+  }, []);
+
+  // Kiểm tra xác thực và chuẩn bị app
   useEffect(() => {
     const checkLoginStatus = async () => {
       const token = await AsyncStorage.getItem("token");
@@ -68,6 +83,7 @@ export default function App() {
     checkLoginStatus();
   }, []);
 
+  // Thiết lập push notifications
   useEffect(() => {
     // Bỏ qua việc đăng ký push notifications trên web
     if (!isWeb) {
@@ -86,17 +102,21 @@ export default function App() {
         const savedToken = await AsyncStorage.getItem('pushToken');
         console.log("Saved token in AsyncStorage:", savedToken);
         
-        // Test gửi thông báo local để kiểm tra
+        // Gửi token lên server khi đã đăng nhập
+        const authToken = await AsyncStorage.getItem('token');
+        if (authToken && token) {
+          try {
+            console.log("Sending push token to server...");
+            await sendPushTokenToServer(token);
+            console.log("Token registered with server successfully");
+          } catch (error) {
+            console.error("Failed to register token with server:", error);
+          }
+        }
+        
+        // Test thông báo khi khởi động (chỉ bật cho dev mode để debug)
         if (permStatus.status === 'granted') {
           console.log("Permissions granted");
-          
-          // Test thông báo khi khởi động (chỉ bật cho dev mode để debug)
-          if (__DEV__) {
-            console.log("DEV mode: Sending test notification after 5 seconds...");
-            setTimeout(() => {
-              sendLocalNotification();
-            }, 5000);
-          }
         }
         
         console.log("===== END NOTIFICATION SETUP =====");
@@ -111,6 +131,9 @@ export default function App() {
       // Xử lý khi nhận được thông báo
       notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
         console.log('Original notification listener - received while app is running:', notification);
+        
+        // Cập nhật số lượng thông báo chưa đọc
+        refreshNotificationsOnPush(notification);
       });
 
       // Xử lý khi người dùng tương tác với thông báo
@@ -121,6 +144,9 @@ export default function App() {
           const navigationData = notification.request.content.data;
           
           console.log('Navigation data from notification:', navigationData);
+          
+          // Cập nhật số lượng thông báo chưa đọc
+          refreshNotificationsOnPush(notification);
           
           // Xử lý điều hướng dựa trên dữ liệu từ thông báo
           if (navigationData && navigationData.screen) {

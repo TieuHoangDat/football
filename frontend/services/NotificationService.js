@@ -1,5 +1,6 @@
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { NotificationEvents } from './NotificationMonitor';
 
 const API_URL = Constants.expoConfig.extra.apiUrl;
 
@@ -137,5 +138,58 @@ export const parseNavigationData = (notification) => {
   } catch (error) {
     console.error('Error parsing navigation data:', error);
     return null;
+  }
+};
+
+/**
+ * Cập nhật thông báo khi nhận được push notification
+ * @param {Object} notification - Thông báo push từ Expo
+ * @returns {Promise<number>} - Số lượng thông báo chưa đọc mới
+ */
+export const refreshNotificationsOnPush = async (notification) => {
+  try {
+    console.log('Refreshing notifications after push received:', notification);
+    
+    // Đợi một chút để đảm bảo thông báo đã được lưu vào database
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Cập nhật và trả về số lượng thông báo chưa đọc
+    const unreadCount = await getUnreadCount();
+    
+    // Lưu số lượng thông báo chưa đọc vào AsyncStorage để có thể truy cập từ nhiều nơi
+    await AsyncStorage.setItem('unreadNotificationCount', String(unreadCount));
+    
+    try {
+      // Phát sự kiện ĐỒNG THỜI qua cả hai EventEmitter
+      console.log('Emitting notification count changed event through NotificationEvents:', unreadCount);
+      
+      // Sử dụng NotificationEvents trực tiếp
+      NotificationEvents.emit('newNotificationsReceived', { count: unreadCount });
+      
+      // Vẫn giữ global.notificationEventEmitter cho các component cũ nếu có
+      if (global.notificationEventEmitter) {
+        global.notificationEventEmitter.emit('onNotificationCountChanged', unreadCount);
+      }
+    } catch (error) {
+      console.error('Error emitting notification event:', error);
+    }
+    
+    return unreadCount;
+  } catch (error) {
+    console.error('Error refreshing notifications:', error);
+    return 0;
+  }
+};
+
+/**
+ * Thiết lập event emitter toàn cục cho thông báo
+ * @param {Object} eventEmitter - Event emitter instance
+ */
+export const setupNotificationEventEmitter = (eventEmitter) => {
+  if (eventEmitter) {
+    console.log('Setting up global notification event emitter');
+    global.notificationEventEmitter = eventEmitter;
+  } else {
+    console.error('Attempted to setup notification event emitter with null value');
   }
 }; 

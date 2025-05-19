@@ -168,7 +168,9 @@ const NotificationsScreen = () => {
       
       if (navigationData) {
         const { screen, params } = navigationData;
-        navigation.navigate(screen, params);
+        if (screen != undefined) {
+          navigation.navigate(screen, params);
+        }
       }
     } catch (error) {
       console.error('Error handling notification press:', error);
