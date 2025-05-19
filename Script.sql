@@ -380,12 +380,12 @@ CREATE INDEX idx_user_subscriptions_entity ON user_subscriptions(subscription_ty
 
 -- Tạo bảng push_tokens để lưu trữ token cho thông báo đẩy
 CREATE TABLE IF NOT EXISTS push_tokens (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    email VARCHAR(100) NOT NULL,
-    token VARCHAR(255) NOT NULL,
-    device_name VARCHAR(100),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY (email, token),
-    FOREIGN KEY (email) REFERENCES users(email) ON DELETE CASCADE
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  token VARCHAR(255) NOT NULL,
+  device_name VARCHAR(100),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY (user_id, token),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );

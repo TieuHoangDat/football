@@ -3,6 +3,7 @@ const db = require("../config/db");
 const { validationResult } = require("express-validator");
 const authMiddleware = require("../middleware/authMiddleware");
 const { updateNotificationSettingsValidator } = require("../validators/notificationValidator");
+const { sendNotificationToUsers } = require("../utils/pushNotification");
 
 const router = express.Router();
 
@@ -577,7 +578,7 @@ router.post("/broadcast", authMiddleware, (req, res) => {
   console.log('QUERY PARAMS:', queryParams);
   
   // Lấy danh sách người dùng theo tiêu chí
-  db.query(userQuery, queryParams, (err, users) => {
+  db.query(userQuery, queryParams, async (err, users) => {
     if (err) {
       console.error("Lỗi khi lấy danh sách người dùng:", err);
       return res.status(500).json({ error: "Lỗi server" });
@@ -591,38 +592,40 @@ router.post("/broadcast", authMiddleware, (req, res) => {
       });
     }
     
-    // Sử dụng navigation_data từ request body nếu được cung cấp
-    let navigationData = navigation_data;
-
-    // Nếu không có navigation_data trong request body, tạo từ related_entity_type và related_entity_id
-    // if (!navigationData && related_entity_type && related_entity_id) {
-    //   // Ánh xạ loại thực thể với màn hình và tham số
-    //   const screenMapping = {
-    //     'MATCH': { screen: 'MatchStats', paramKey: 'matchId' },
-    //     'TEAM': { screen: 'TeamDetails', paramKey: 'teamId' },
-    //     'PLAYER': { screen: 'PlayerDetails', paramKey: 'playerId' },
-    //     'COMMENT': { screen: 'Comments', paramKey: 'commentId' },
-    //     'NEWS': { screen: 'NewsDetail', paramKey: 'newsId' }
-    //   };
-      
-    //   const mappedScreen = screenMapping[related_entity_type];
-    //   if (mappedScreen) {
-    //     const params = { [mappedScreen.paramKey]: related_entity_id };
-        
-    //     // Thêm tham số bổ sung cho comment
-    //     if (related_entity_type === 'COMMENT' && req.body.newsId) {
-    //       params.newsId = req.body.newsId;
-    //       params.scrollToComment = true;
-    //     }
-        
-    //     navigationData = JSON.stringify({
-    //       screen: mappedScreen.screen,
-    //       params
-    //     });
-    //   }
-    // }
+    // Chuẩn bị dữ liệu cho push notification
+    let pushData = {};
     
-    console.log('NAVIGATION DATA:', navigationData);
+    // Nếu có navigation_data, parse nếu là string hoặc sử dụng trực tiếp nếu là object
+    if (navigation_data) {
+      pushData = typeof navigation_data === 'string' 
+        ? JSON.parse(navigation_data) 
+        : navigation_data;
+    } 
+    // Nếu không có navigation_data nhưng có related_entity_type và related_entity_id, tạo dữ liệu điều hướng
+    else if (related_entity_type && related_entity_id) {
+      // Ánh xạ loại thực thể với màn hình tương ứng trong ứng dụng mobile
+      const screenMapping = {
+        'MATCH': { screen: 'MatchStats', paramKey: 'matchId' },
+        'TEAM': { screen: 'TeamDetails', paramKey: 'teamId' },
+        'PLAYER': { screen: 'PlayerDetails', paramKey: 'playerId' },
+        'COMMENT': { screen: 'Comments', paramKey: 'commentId' },
+        'NEWS': { screen: 'NewsDetail', paramKey: 'newsId' }
+      };
+      
+      const mappedScreen = screenMapping[related_entity_type];
+      if (mappedScreen) {
+        pushData = {
+          screen: mappedScreen.screen,
+          params: { [mappedScreen.paramKey]: related_entity_id }
+        };
+        
+        // Thêm tham số bổ sung cho comment
+        if (related_entity_type === 'COMMENT' && req.body.newsId) {
+          pushData.params.newsId = req.body.newsId;
+          pushData.params.scrollToComment = true;
+        }
+      }
+    }
     
     // Chuẩn bị dữ liệu thông báo cho nhiều người dùng
     const notifications = users.map(user => [
@@ -634,7 +637,7 @@ router.post("/broadcast", authMiddleware, (req, res) => {
       related_entity_id || null,
       false, // is_read
       new Date(), // created_at
-      navigationData // navigation_data
+      typeof pushData === 'object' ? JSON.stringify(pushData) : pushData // navigation_data
     ]);
     
     // Gửi thông báo cho tất cả người dùng
@@ -647,20 +650,159 @@ router.post("/broadcast", authMiddleware, (req, res) => {
     console.log('INSERT QUERY:', query);
     console.log('Total notifications to insert:', notifications.length);
     console.log('First notification sample:', notifications.length > 0 ? notifications[0] : 'No notifications');
-    console.log('=== END DEBUG BROADCAST NOTIFICATION ===');
     
-    db.query(query, [notifications], (err, result) => {
+    db.query(query, [notifications], async (err, result) => {
       if (err) {
         console.error("Lỗi khi gửi thông báo:", err);
         return res.status(500).json({ error: "Lỗi server khi gửi thông báo" });
       }
       
-      return res.status(201).json({
-        message: `Đã gửi thông báo đến ${result.affectedRows} người dùng`,
-        count: result.affectedRows
-      });
+      // Lấy danh sách user IDs
+      const userIds = users.map(user => user.id);
+      
+      // Gửi push notification đến thiết bị của người dùng
+      try {
+        const pushResult = await sendNotificationToUsers(userIds, title, message, pushData);
+        console.log('Push notification results:', pushResult);
+        console.log('=== END DEBUG BROADCAST NOTIFICATION ===');
+        
+        return res.status(201).json({
+          message: `Đã gửi thông báo đến ${result.affectedRows} người dùng`,
+          count: result.affectedRows,
+          push_notification: pushResult
+        });
+      } catch (pushError) {
+        console.error("Lỗi khi gửi push notification:", pushError);
+        console.log('=== END DEBUG BROADCAST NOTIFICATION ===');
+        
+        // Tiếp tục và trả về thông báo đã ghi vào DB, dù push có lỗi
+        return res.status(201).json({
+          message: `Đã gửi thông báo đến ${result.affectedRows} người dùng (không gửi được push notification)`,
+          count: result.affectedRows,
+          push_error: pushError.message || "Lỗi gửi push notification"
+        });
+      }
     });
   });
+});
+
+/**
+ * @route   POST /notifications/tokens
+ * @desc    Đăng ký token thiết bị cho thông báo đẩy
+ * @access  Private
+ */
+router.post("/tokens", authMiddleware, (req, res) => {
+  const userId = req.user.id;
+  const { token, device_name } = req.body;
+
+  if (!token) {
+    return res.status(400).json({ error: "Token thiết bị là bắt buộc" });
+  }
+
+  // Kiểm tra xem token đã tồn tại hay chưa
+  db.query(
+    "SELECT * FROM push_tokens WHERE user_id = ? AND token = ?",
+    [userId, token],
+    (err, results) => {
+      if (err) {
+        console.error("Lỗi khi kiểm tra token:", err);
+        return res.status(500).json({ error: "Lỗi server" });
+      }
+
+      if (results.length > 0) {
+        // Nếu token đã tồn tại, cập nhật thời gian và tên thiết bị
+        db.query(
+          "UPDATE push_tokens SET updated_at = NOW(), device_name = ? WHERE user_id = ? AND token = ?",
+          [device_name || results[0].device_name, userId, token],
+          (err, result) => {
+            if (err) {
+              console.error("Lỗi khi cập nhật token:", err);
+              return res.status(500).json({ error: "Lỗi server" });
+            }
+
+            return res.json({ 
+              message: "Token đã được cập nhật", 
+              token_id: results[0].id 
+            });
+          }
+        );
+      } else {
+        // Nếu token chưa tồn tại, tạo mới
+        db.query(
+          "INSERT INTO push_tokens (user_id, token, device_name) VALUES (?, ?, ?)",
+          [userId, token, device_name || null],
+          (err, result) => {
+            if (err) {
+              console.error("Lỗi khi đăng ký token:", err);
+              return res.status(500).json({ error: "Lỗi server" });
+            }
+
+            return res.status(201).json({ 
+              message: "Đăng ký token thành công", 
+              token_id: result.insertId 
+            });
+          }
+        );
+      }
+    }
+  );
+});
+
+/**
+ * @route   DELETE /notifications/tokens/:token
+ * @desc    Hủy đăng ký token thiết bị
+ * @access  Private
+ */
+router.delete("/tokens/:token", authMiddleware, (req, res) => {
+  const userId = req.user.id;
+  const token = req.params.token;
+
+  db.query(
+    "DELETE FROM push_tokens WHERE user_id = ? AND token = ?",
+    [userId, token],
+    (err, result) => {
+      if (err) {
+        console.error("Lỗi khi xóa token:", err);
+        return res.status(500).json({ error: "Lỗi server" });
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: "Không tìm thấy token" });
+      }
+
+      return res.json({ message: "Đã hủy đăng ký token thành công" });
+    }
+  );
+});
+
+/**
+ * @route   POST /notifications/direct-push
+ * @desc    Gửi trực tiếp push notification đến một token cụ thể (cho mục đích test)
+ * @access  Private (Admin only)
+ */
+router.post("/direct-push", authMiddleware, async (req, res) => {
+  const { token, title, body, data } = req.body;
+  
+  // Kiểm tra thông tin bắt buộc
+  if (!token || !title || !body) {
+    return res.status(400).json({ error: "Thiếu thông tin bắt buộc: token, title, body" });
+  }
+  
+  try {
+    const { sendPushNotification } = require('../utils/pushNotification');
+    const result = await sendPushNotification(token, title, body, data || {});
+    
+    return res.status(200).json({
+      message: "Đã gửi push notification",
+      result
+    });
+  } catch (error) {
+    console.error("Lỗi khi gửi push notification trực tiếp:", error);
+    return res.status(500).json({ 
+      error: "Lỗi khi gửi push notification",
+      details: error.message
+    });
+  }
 });
 
 module.exports = router; 
