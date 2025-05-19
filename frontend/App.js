@@ -23,32 +23,13 @@ import ReplyCommentScreen from "./screens/News/ReplyCommentScreen";
 import SearchScreen from "./screens/SearchScreen";
 import TeamDetailsScreen from "./screens/Teams/TeamDetailsScreen";
 import PlayeretailsScreen from "./screens/Teams/PlayerDetailsScreen";
+import ManageScreen from "./screens/Manage/ManageScreen";
+import AddMatchScreen from "./screens/Manage/AddMatchScreen";
+import UpdateMatchScreen from "./screens/Manage/UpdateMatchScreen";
+import UpdateUserScreen from "./screens/Manage/UpdateUserScreen";
 import { enableScreens } from 'react-native-screens';
 enableScreens();
 const Stack = createNativeStackNavigator();
-
-// CẤU HÌNH PUSH NOTIFICATION TỪ EXPO API
-/*
-Khi gửi thông báo từ Expo Push API, hãy sử dụng định dạng sau để có âm thanh:
-
-fetch("https://exp.host/--/api/v2/push/send", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({
-    to: "ExponentPushToken[...]",
-    title: "Thông báo mới",
-    body: "Nội dung thông báo",
-    sound: "default",
-    badge: 1,
-    priority: "high",
-    channelId: "important", // Nếu bạn đang gửi cho Android
-    data: { screen: "Home" }
-  })
-});
-
-*/
 
 export default function App() {
   const [loading, setLoading] = useState(true);
@@ -58,7 +39,7 @@ export default function App() {
   const notificationListener = useRef();
   const foregroundNotificationSubscription = useRef();
   const emitterRef = useRef(null);
-  
+
   // Kiểm tra xem có đang chạy trên web không
   const isWeb = Platform.OS === 'web';
 
@@ -79,7 +60,7 @@ export default function App() {
       setInitialRoute(token ? "Home" : "Login");
       setLoading(false);
     };
-    
+
     checkLoginStatus();
   }, []);
 
@@ -89,19 +70,19 @@ export default function App() {
     if (!isWeb) {
       const setupNotifications = async () => {
         console.log("===== NOTIFICATION SETUP =====");
-        
+
         // Kiểm tra quyền thông báo
         const permStatus = await checkNotificationPermissions();
         console.log("Permission check result:", permStatus);
-        
+
         // Đăng ký nhận push notifications
         const token = await registerForPushNotificationsAsync();
         console.log("Registration complete, token:", token);
-        
+
         // Kiểm tra xem token đã được lưu vào AsyncStorage chưa
         const savedToken = await AsyncStorage.getItem('pushToken');
         console.log("Saved token in AsyncStorage:", savedToken);
-        
+
         // Gửi token lên server khi đã đăng nhập
         const authToken = await AsyncStorage.getItem('token');
         if (authToken && token) {
@@ -113,15 +94,15 @@ export default function App() {
             console.error("Failed to register token with server:", error);
           }
         }
-        
+
         // Test thông báo khi khởi động (chỉ bật cho dev mode để debug)
         if (permStatus.status === 'granted') {
           console.log("Permissions granted");
         }
-        
+
         console.log("===== END NOTIFICATION SETUP =====");
       };
-      
+
       setupNotifications();
 
       // Đăng ký lắng nghe thông báo khi ứng dụng đang chạy và hiển thị Alert
@@ -131,7 +112,7 @@ export default function App() {
       // Xử lý khi nhận được thông báo
       notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
         console.log('Original notification listener - received while app is running:', notification);
-        
+
         // Cập nhật số lượng thông báo chưa đọc
         refreshNotificationsOnPush(notification);
       });
@@ -142,12 +123,12 @@ export default function App() {
           console.log('User interacted with notification:', response);
           const { notification } = response;
           const navigationData = notification.request.content.data;
-          
+
           console.log('Navigation data from notification:', navigationData);
-          
+
           // Cập nhật số lượng thông báo chưa đọc
           refreshNotificationsOnPush(notification);
-          
+
           // Xử lý điều hướng dựa trên dữ liệu từ thông báo
           if (navigationData && navigationData.screen) {
             if (navigationRef.current) {
@@ -182,9 +163,9 @@ export default function App() {
 
   return (
     <NavigationContainer ref={navigationRef}>
-      <Stack.Navigator 
-        initialRouteName={initialRoute} 
-        screenOptions={{ 
+      <Stack.Navigator
+        initialRouteName={initialRoute}
+        screenOptions={{
           headerShown: false,
           gestureEnabled: true,
           gestureDirection: 'horizontal'
@@ -205,6 +186,10 @@ export default function App() {
         <Stack.Screen name="Search" component={SearchScreen} />
         <Stack.Screen name="TeamDetails" component={TeamDetailsScreen} />
         <Stack.Screen name="PlayerDetails" component={PlayeretailsScreen} />
+        <Stack.Screen name="Manage" component={ManageScreen} />
+        <Stack.Screen name="AddMatch" component={AddMatchScreen} />
+        <Stack.Screen name="UpdateMatch" component={UpdateMatchScreen} />
+        <Stack.Screen name="UpdateUser" component={UpdateUserScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

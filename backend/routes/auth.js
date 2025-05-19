@@ -2,7 +2,10 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const db = require("../config/db");
-const { registerValidator, loginValidator } = require("../validators/authValidator");
+const {
+    registerValidator,
+    loginValidator,
+} = require("../validators/authValidator");
 const { validationResult } = require("express-validator");
 
 const router = express.Router();
@@ -10,107 +13,234 @@ const SECRET_KEY = "your_secret_key";
 
 // Đăng ký tài khoản
 router.post("/register", registerValidator, async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
-  const { name, email, password } = req.body;
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  db.query(
-    "INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
-    [name, email, hashedPassword],
-    (err, result) => {
-      if (err) {
-        return res.status(500).json({ error: "Lỗi khi đăng ký" });
-      }
-      res.json({ message: "Đăng ký thành công" });
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
     }
-  );
+
+    const { name, email, password } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    db.query(
+        "INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
+        [name, email, hashedPassword],
+        (err, result) => {
+            if (err) {
+                return res.status(500).json({ error: "Lỗi khi đăng ký" });
+            }
+            res.json({ message: "Đăng ký thành công" });
+        }
+    );
 });
 
 // Đăng nhập
 router.post("/login", loginValidator, (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
 
-  const { email, password } = req.body;
+    const { email, password } = req.body;
 
-  db.query("SELECT * FROM users WHERE email = ?", [email], async (err, results) => {
-    if (err) return res.status(500).json({ error: "Lỗi server" });
+    db.query(
+        "SELECT * FROM users WHERE email = ?",
+        [email],
+        async (err, results) => {
+            if (err) return res.status(500).json({ error: "Lỗi server" });
 
-    if (results.length === 0) return res.status(401).json({ error: "Email không tồn tại" });
+            if (results.length === 0)
+                return res.status(401).json({ error: "Email không tồn tại" });
 
-    const user = results[0];
-    const isMatch = await bcrypt.compare(password, user.password);
+            const user = results[0];
+            const isMatch = await bcrypt.compare(password, user.password);
 
-    if (!isMatch) return res.status(401).json({ error: "Mật khẩu không chính xác" });
+            if (!isMatch)
+                return res
+                    .status(401)
+                    .json({ error: "Mật khẩu không chính xác" });
 
-    const token = jwt.sign({ id: user.id }, SECRET_KEY, { expiresIn: "7d" });
+            const token = jwt.sign({ id: user.id }, SECRET_KEY, {
+                expiresIn: "7d",
+            });
 
-    res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
-  });
+            res.json({
+                token,
+                user: { id: user.id, email: user.email, name: user.name },
+            });
+        }
+    );
 });
 
 // Đăng xuất (Client xóa token)
 router.post("/logout", (req, res) => {
-  res.json({ message: "Đã đăng xuất" });
+    res.json({ message: "Đã đăng xuất" });
 });
 
-// Trả về thông tin voucher mẫu
-router.get("/voucher", (req, res) => {
-  const voucherData = {
-    data: {
-      id: "08dc432f-ca15-4d26-8cac-2ab2d68783a6",
-      title: "voucher giảm % món Linh test",
-      promoCode: "PRO-5051",
-      status: 5,
-      campaignStartDate: "2024-03-14T00:00:00",
-      campaignEndDate: "2025-05-01T23:59:59",
-      description: "<p>test</p>",
-      shortDescription: "<p>test&nbsp;</p>",
-      condition: "<p>test</p>",
-      url: null,
-      publishedDate: "2025-04-25T09:51:43.947375",
-      typeName: "Promotion",
-      typeId: "1",
-      category: 1,
-      categoryName: "Promotion",
-      clmVoucherTypeId: "6184e0fc-bc71-4067-8b6f-34452a335dc6",
-      clmVoucherTypeName: "GGG_EVoucher",
-      isDeleted: true,
-      restaurants: [
-        {
-          id: "08daad3c-8271-40eb-8381-43efb85ed146",
-          code: 13,
-          name: "Kichi-Kichi Phạm Ngọc Thạch",
-          address: "101-B1 Phạm Ngọc Thạch, Đống Đa, Hà Nội",
-          telephone: "0584693537",
-          brandId: "08da8ee7-6efc-49d1-82cc-e679c0060053",
-          brandName: "Kichi-Kichi - Lẩu băng chuyền",
-          regionName: "Ha Noi"
-        },
-        {
-          id: "08db9e7c-e2a4-403d-8e53-30d7623553a0",
-          code: 99004,
-          name: "Ecommerce_HN",
-          address: "229 Tây Sơn, Ngã Tư Sở, Đống Đa, Hà Nội",
-          telephone: "0584693537",
-          brandId: "08dabb1c-1c52-412f-8941-c12871809b2e",
-          brandName: "eCommerce",
-          regionName: "Ha Noi"
+// Lấy thông tin người dùng
+router.get("/me", async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ error: "Không có token xác thực" });
         }
-      ],
-      partners: []
-    },
-    success: true,
-    errors: []
-  };
 
-  res.json(voucherData);
+        const decoded = jwt.verify(token, SECRET_KEY);
+
+        db.query(
+            "SELECT id, name, email, role FROM users WHERE id = ?",
+            [decoded.id],
+            (err, results) => {
+                if (err) {
+                    return res.status(500).json({ error: "Lỗi server" });
+                }
+                if (results.length === 0) {
+                    return res
+                        .status(404)
+                        .json({ error: "Không tìm thấy người dùng" });
+                }
+                res.json(results[0]);
+            }
+        );
+    } catch (error) {
+        res.status(401).json({ error: "Token không hợp lệ" });
+    }
+});
+
+// Lấy danh sách người dùng (chỉ admin)
+router.get("/users", async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ error: "Không có token xác thực" });
+        }
+
+        const decoded = jwt.verify(token, SECRET_KEY);
+
+        // Kiểm tra quyền admin
+        db.query(
+            "SELECT role FROM users WHERE id = ?",
+            [decoded.id],
+            (err, results) => {
+                if (
+                    err ||
+                    results.length === 0 ||
+                    results[0].role !== "admin"
+                ) {
+                    return res
+                        .status(403)
+                        .json({ error: "Không có quyền truy cập" });
+                }
+
+                // Lấy danh sách người dùng
+                db.query(
+                    "SELECT id, name, email, role, can_comment FROM users",
+                    (err, users) => {
+                        if (err) {
+                            return res
+                                .status(500)
+                                .json({ error: "Lỗi server" });
+                        }
+                        res.json(users);
+                    }
+                );
+            }
+        );
+    } catch (error) {
+        res.status(401).json({ error: "Token không hợp lệ" });
+    }
+});
+
+// Cập nhật thông tin người dùng (chỉ admin)
+router.put("/users/:id", async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ error: "Không có token xác thực" });
+        }
+
+        const decoded = jwt.verify(token, SECRET_KEY);
+
+        // Kiểm tra quyền admin
+        db.query(
+            "SELECT role FROM users WHERE id = ?",
+            [decoded.id],
+            (err, results) => {
+                if (
+                    err ||
+                    results.length === 0 ||
+                    results[0].role !== "admin"
+                ) {
+                    return res
+                        .status(403)
+                        .json({ error: "Không có quyền truy cập" });
+                }
+
+                const { name, email, role, can_comment } = req.body;
+                const userId = req.params.id;
+
+                db.query(
+                    "UPDATE users SET name = ?, email = ?, role = ?, can_comment = ? WHERE id = ?",
+                    [name, email, role, can_comment, userId],
+                    (err, result) => {
+                        if (err) {
+                            return res
+                                .status(500)
+                                .json({ error: "Lỗi khi cập nhật" });
+                        }
+                        res.json({ message: "Cập nhật thành công" });
+                    }
+                );
+            }
+        );
+    } catch (error) {
+        res.status(401).json({ error: "Token không hợp lệ" });
+    }
+});
+
+// Xóa người dùng (chỉ admin)
+router.delete("/users/:id", async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ error: "Không có token xác thực" });
+        }
+
+        const decoded = jwt.verify(token, SECRET_KEY);
+
+        // Kiểm tra quyền admin
+        db.query(
+            "SELECT role FROM users WHERE id = ?",
+            [decoded.id],
+            (err, results) => {
+                if (
+                    err ||
+                    results.length === 0 ||
+                    results[0].role !== "admin"
+                ) {
+                    return res
+                        .status(403)
+                        .json({ error: "Không có quyền truy cập" });
+                }
+
+                const userId = req.params.id;
+
+                db.query(
+                    "DELETE FROM users WHERE id = ?",
+                    [userId],
+                    (err, result) => {
+                        if (err) {
+                            return res
+                                .status(500)
+                                .json({ error: "Lỗi khi xóa" });
+                        }
+                        res.json({ message: "Xóa thành công" });
+                    }
+                );
+            }
+        );
+    } catch (error) {
+        res.status(401).json({ error: "Token không hợp lệ" });
+    }
 });
 
 module.exports = router;
