@@ -2,14 +2,16 @@ CREATE TABLE users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
-  password VARCHAR(255) NOT NULL
+  password VARCHAR(255) NOT NULL,
+  role ENUM('user', 'admin') NOT NULL DEFAULT 'user'
 );
 
-INSERT INTO users (name, email, password) VALUES
-('Nguyễn Văn A', 'nguyenvana@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG'), -- Mật khẩu: 123
-('Trần Thị B', 'tranthib@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG'),
-('Lê Văn C', 'levanc@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG'),
-('Phạm Thị D', 'phamthid@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG');
+INSERT INTO users (name, email, password, role) VALUES
+('Nguyễn Văn A', 'nguyenvana@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG', 'admin'),
+('Trần Thị B', 'tranthib@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG', 'user'),
+('Lê Văn C', 'levanc@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG', 'user'),
+('Phạm Thị D', 'phamthid@example.com', '$2b$10$x2NwMshx3uLJhFjh/wy22u1C9MRheGhE15T/D3NHt5VqupU44GQlG', 'user');
+
 
 
 CREATE TABLE news (
@@ -68,11 +70,11 @@ CREATE TABLE teams (
 );
 
 INSERT INTO teams (name, description, country, image_url) VALUES
-('Manchester United', 'Câu lạc bộ bóng đá nổi tiếng tại Anh.', 'Anh', 'Manchester City.png'),
-('Real Madrid', 'Câu lạc bộ thành công nhất châu Âu.', 'Tây Ban Nha', 'Manchester City.png'),
-('Paris Saint-Germain', 'Đội bóng mạnh nhất nước Pháp.', 'Pháp', 'Manchester City.png'),
-('Bayern Munich', 'Gã khổng lồ nước Đức.', 'Đức', 'Manchester City.png'),
-('AC Milan', 'Câu lạc bộ giàu truyền thống tại Ý.', 'Ý', 'Manchester City.png');
+('Manchester United', 'Câu lạc bộ bóng đá nổi tiếng tại Anh.', 'Anh', 'Manchester United.png'),
+('Real Madrid', 'Câu lạc bộ thành công nhất châu Âu.', 'Tây Ban Nha', 'Real Madrid.png'),
+('Paris Saint-Germain', 'Đội bóng mạnh nhất nước Pháp.', 'Pháp', 'Paris Saint-Germain.png'),
+('Bayern Munich', 'Gã khổng lồ nước Đức.', 'Đức', 'Bayern Munich.png'),
+('AC Milan', 'Câu lạc bộ giàu truyền thống tại Ý.', 'Ý', 'AC Milan.png');
 
 INSERT INTO teams (name, description, country, image_url) VALUES
 ('Barcelona', 'Đội bóng có lối chơi tiki-taka huyền thoại.', 'Tây Ban Nha', 'Barcelona.png'),

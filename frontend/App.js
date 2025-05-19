@@ -20,6 +20,7 @@ import TeamDetailsScreen from "./screens/Teams/TeamDetailsScreen";
 import PlayeretailsScreen from "./screens/Teams/PlayerDetailsScreen";
 import ManageScreen from "./screens/Manage/ManageScreen";
 import AddMatchScreen from "./screens/Manage/AddMatchScreen";
+import UpdateMatchScreen from "./screens/Manage/UpdateMatchScreen";
 const Stack = createNativeStackNavigator();
 
 export default function App() {
@@ -63,6 +64,7 @@ export default function App() {
         <Stack.Screen name="PlayerDetails" component={PlayeretailsScreen} />
         <Stack.Screen name="Manage" component={ManageScreen} />
         <Stack.Screen name="AddMatch" component={AddMatchScreen} />
+        <Stack.Screen name="UpdateMatch" component={UpdateMatchScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

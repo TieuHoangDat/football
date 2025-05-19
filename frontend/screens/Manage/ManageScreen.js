@@ -26,7 +26,7 @@ const ManageScreen = ({ navigation }) => {
                     />
                     <Text style={styles.buttonText}>Quản lý người dùng</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.button}onPress={() => navigation.navigate("AddMatch")} >
+                <TouchableOpacity style={styles.button}  onPress={() => navigation.navigate("AddMatch")} >
                     <Ionicons
                         name="add-circle-outline"
                         size={22}
@@ -35,7 +35,7 @@ const ManageScreen = ({ navigation }) => {
                     />
                     <Text style={styles.buttonText}>Thêm trận đấu</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.button}>
+                <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("UpdateMatch")}>
                     <Ionicons
                         name="create-outline"
                         size={22}

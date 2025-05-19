@@ -183,6 +183,317 @@ router.get("/stats/:matchId", (req, res) => {
 });
 
 /**
+ * API lấy thống kê trận đấu theo định dạng mới
+ * Endpoint này phù hợp với cách gọi API từ frontend
+ */
+router.get("/:matchId/stats", (req, res) => {
+    const { matchId } = req.params;
+
+    const query = `
+    SELECT *
+    FROM match_stats
+    WHERE match_id = ?
+  `;
+
+    db.query(query, [matchId], (err, results) => {
+        if (err) {
+            console.error("Lỗi truy vấn thống kê trận đấu:", err);
+            return res
+                .status(500)
+                .json({ error: "Lỗi khi lấy thống kê trận đấu" });
+        }
+        res.json(results);
+    });
+});
+
+/**
+ * API cập nhật hoặc thêm mới thống kê trận đấu
+ */
+router.post("/:matchId/stats", (req, res) => {
+    const { matchId } = req.params;
+    const {
+        team_id,
+        possession,
+        shots,
+        shots_on_target,
+        corners,
+        fouls,
+        yellow_cards,
+        red_cards,
+    } = req.body;
+
+    if (!team_id) {
+        return res.status(400).json({
+            message: "Thiếu thông tin đội bóng (team_id)",
+        });
+    }
+
+    // Kiểm tra xem trận đấu có tồn tại không
+    const matchCheckQuery = `SELECT id FROM matches WHERE id = ?`;
+    db.query(matchCheckQuery, [matchId], (err, matchResults) => {
+        if (err) {
+            console.error("Lỗi kiểm tra trận đấu:", err);
+            return res.status(500).json({
+                error: "Lỗi khi kiểm tra trận đấu",
+            });
+        }
+
+        if (matchResults.length === 0) {
+            return res.status(404).json({
+                message: "Không tìm thấy trận đấu",
+            });
+        }
+
+        // Kiểm tra xem đội bóng có tồn tại không
+        const teamCheckQuery = `SELECT id FROM teams WHERE id = ?`;
+        db.query(teamCheckQuery, [team_id], (err, teamResults) => {
+            if (err) {
+                console.error("Lỗi kiểm tra đội bóng:", err);
+                return res.status(500).json({
+                    error: "Lỗi khi kiểm tra đội bóng",
+                });
+            }
+
+            if (teamResults.length === 0) {
+                return res.status(404).json({
+                    message: "Không tìm thấy đội bóng",
+                });
+            }
+
+            // Kiểm tra xem thông tin thống kê đã tồn tại chưa
+            const checkQuery = `
+            SELECT * FROM match_stats
+            WHERE match_id = ? AND team_id = ?
+            `;
+
+            db.query(checkQuery, [matchId, team_id], (err, results) => {
+                if (err) {
+                    console.error("Lỗi kiểm tra thống kê trận đấu:", err);
+                    return res.status(500).json({
+                        error: "Lỗi khi kiểm tra thống kê trận đấu",
+                    });
+                }
+
+                // Chuẩn bị dữ liệu để tránh lỗi SQL
+                // Nếu đã có dữ liệu cũ và giá trị mới là null, giữ nguyên giá trị cũ
+                let possessionValue,
+                    shotsValue,
+                    shotsOnTargetValue,
+                    cornersValue,
+                    foulsValue,
+                    yellowCardsValue,
+                    redCardsValue;
+
+                if (results.length > 0) {
+                    // Có dữ liệu cũ, chỉ cập nhật nếu giá trị mới không phải null
+                    const existingStats = results[0];
+                    possessionValue =
+                        possession !== undefined &&
+                        possession !== null &&
+                        possession !== ""
+                            ? parseFloat(possession)
+                            : existingStats.possession;
+
+                    shotsValue =
+                        shots !== undefined && shots !== null && shots !== ""
+                            ? parseInt(shots)
+                            : existingStats.shots;
+
+                    shotsOnTargetValue =
+                        shots_on_target !== undefined &&
+                        shots_on_target !== null &&
+                        shots_on_target !== ""
+                            ? parseInt(shots_on_target)
+                            : existingStats.shots_on_target;
+
+                    cornersValue =
+                        corners !== undefined &&
+                        corners !== null &&
+                        corners !== ""
+                            ? parseInt(corners)
+                            : existingStats.corners;
+
+                    foulsValue =
+                        fouls !== undefined && fouls !== null && fouls !== ""
+                            ? parseInt(fouls)
+                            : existingStats.fouls;
+
+                    yellowCardsValue =
+                        yellow_cards !== undefined &&
+                        yellow_cards !== null &&
+                        yellow_cards !== ""
+                            ? parseInt(yellow_cards)
+                            : existingStats.yellow_cards;
+
+                    redCardsValue =
+                        red_cards !== undefined &&
+                        red_cards !== null &&
+                        red_cards !== ""
+                            ? parseInt(red_cards)
+                            : existingStats.red_cards;
+                } else {
+                    // Không có dữ liệu cũ, chỉ cập nhật với giá trị mới
+                    possessionValue =
+                        possession !== undefined &&
+                        possession !== null &&
+                        possession !== ""
+                            ? parseFloat(possession)
+                            : null;
+
+                    shotsValue =
+                        shots !== undefined && shots !== null && shots !== ""
+                            ? parseInt(shots)
+                            : null;
+
+                    shotsOnTargetValue =
+                        shots_on_target !== undefined &&
+                        shots_on_target !== null &&
+                        shots_on_target !== ""
+                            ? parseInt(shots_on_target)
+                            : null;
+
+                    cornersValue =
+                        corners !== undefined &&
+                        corners !== null &&
+                        corners !== ""
+                            ? parseInt(corners)
+                            : null;
+
+                    foulsValue =
+                        fouls !== undefined && fouls !== null && fouls !== ""
+                            ? parseInt(fouls)
+                            : null;
+
+                    yellowCardsValue =
+                        yellow_cards !== undefined &&
+                        yellow_cards !== null &&
+                        yellow_cards !== ""
+                            ? parseInt(yellow_cards)
+                            : null;
+
+                    redCardsValue =
+                        red_cards !== undefined &&
+                        red_cards !== null &&
+                        red_cards !== ""
+                            ? parseInt(red_cards)
+                            : null;
+                }
+
+                console.log("Received stat values:", {
+                    matchId,
+                    team_id,
+                    possession,
+                    shots,
+                    shots_on_target,
+                    corners,
+                    fouls,
+                    yellow_cards,
+                    red_cards,
+                });
+
+                console.log("Processed stat values:", {
+                    matchId,
+                    team_id,
+                    possessionValue,
+                    shotsValue,
+                    shotsOnTargetValue,
+                    cornersValue,
+                    foulsValue,
+                    yellowCardsValue,
+                    redCardsValue,
+                });
+
+                // Nếu đã tồn tại, cập nhật thông tin
+                if (results.length > 0) {
+                    const updateQuery = `
+                    UPDATE match_stats
+                    SET 
+                        possession = ?,
+                        shots = ?,
+                        shots_on_target = ?,
+                        corners = ?,
+                        fouls = ?,
+                        yellow_cards = ?,
+                        red_cards = ?
+                    WHERE match_id = ? AND team_id = ?
+                    `;
+
+                    db.query(
+                        updateQuery,
+                        [
+                            possessionValue,
+                            shotsValue,
+                            shotsOnTargetValue,
+                            cornersValue,
+                            foulsValue,
+                            yellowCardsValue,
+                            redCardsValue,
+                            matchId,
+                            team_id,
+                        ],
+                        (err, result) => {
+                            if (err) {
+                                console.error(
+                                    "Lỗi cập nhật thống kê trận đấu:",
+                                    err
+                                );
+                                return res.status(500).json({
+                                    error: "Lỗi khi cập nhật thống kê trận đấu",
+                                });
+                            }
+
+                            return res.json({
+                                message:
+                                    "Cập nhật thống kê trận đấu thành công",
+                            });
+                        }
+                    );
+                } else {
+                    // Nếu chưa tồn tại, thêm mới
+                    const insertQuery = `
+                    INSERT INTO match_stats 
+                    (match_id, team_id, possession, shots, shots_on_target, corners, fouls, yellow_cards, red_cards)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    `;
+
+                    db.query(
+                        insertQuery,
+                        [
+                            matchId,
+                            team_id,
+                            possessionValue,
+                            shotsValue,
+                            shotsOnTargetValue,
+                            cornersValue,
+                            foulsValue,
+                            yellowCardsValue,
+                            redCardsValue,
+                        ],
+                        (err, result) => {
+                            if (err) {
+                                console.error(
+                                    "Lỗi thêm mới thống kê trận đấu:",
+                                    err
+                                );
+                                return res.status(500).json({
+                                    error: "Lỗi khi thêm mới thống kê trận đấu",
+                                });
+                            }
+
+                            return res.status(201).json({
+                                message:
+                                    "Thêm mới thống kê trận đấu thành công",
+                                id: result.insertId,
+                            });
+                        }
+                    );
+                }
+            });
+        });
+    });
+});
+
+/**
  * API lấy danh sách cầu thủ tham gia trận đấu
  * Trả về thông tin cầu thủ của cả hai đội
  */
@@ -371,6 +682,65 @@ router.post("/", (req, res) => {
                     );
                 }
             );
+        }
+    );
+});
+
+/**
+ * API cập nhật kết quả trận đấu
+ */
+router.put("/:matchId", (req, res) => {
+    const { matchId } = req.params;
+    const { home_score, away_score, status } = req.body;
+
+    // Validate required fields
+    if (home_score === undefined || away_score === undefined || !status) {
+        return res.status(400).json({
+            message: "Vui lòng cung cấp đầy đủ thông tin tỷ số và trạng thái",
+        });
+    }
+
+    // Validate scores are non-negative numbers
+    if (home_score < 0 || away_score < 0) {
+        return res.status(400).json({
+            message: "Tỷ số không thể là số âm",
+        });
+    }
+
+    // Validate status
+    const validStatuses = ["scheduled", "live", "finished"];
+    if (!validStatuses.includes(status)) {
+        return res.status(400).json({
+            message: "Trạng thái trận đấu không hợp lệ",
+        });
+    }
+
+    const query = `
+        UPDATE matches 
+        SET home_score = ?, away_score = ?, status = ?
+        WHERE id = ?
+    `;
+
+    db.query(
+        query,
+        [home_score, away_score, status, matchId],
+        (err, result) => {
+            if (err) {
+                console.error("Lỗi cập nhật kết quả trận đấu:", err);
+                return res.status(500).json({
+                    message: "Không thể cập nhật kết quả trận đấu",
+                });
+            }
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({
+                    message: "Không tìm thấy trận đấu",
+                });
+            }
+
+            res.json({
+                message: "Cập nhật kết quả trận đấu thành công",
+            });
         }
     );
 });
