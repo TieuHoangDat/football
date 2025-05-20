@@ -201,11 +201,12 @@ const AccountScreen = ({ navigation }) => {
         });
     };
 
-    const handleLogout = async () => {
-        await AsyncStorage.removeItem("token");
-        Alert.alert("Đã đăng xuất!");
-        navigation.replace("Login");
-    };
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem("token");
+    await AsyncStorage.removeItem("email");
+    Alert.alert("Đã đăng xuất!");
+    navigation.replace("Login");
+  };
 
     const SettingItem = ({ title, field, value, icon }) => (
         <View style={styles.settingItem}>

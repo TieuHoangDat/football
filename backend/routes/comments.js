@@ -1,6 +1,7 @@
 const express = require("express");
 const db = require("../config/db");
 const authMiddleware = require("../middleware/authMiddleware");
+const { sendNotificationToUser } = require("../utils/pushNotification");
 
 const router = express.Router();
 
@@ -131,9 +132,19 @@ router.post("/", (req, res) => {
                           result.insertId,
                           navigationData
                         ],
-                        (err) => {
+                        (err, notificationResult) => {
                           if (err) {
                             console.error('Lỗi khi tạo thông báo:', err);
+                          } else {
+                            // Gửi push notification
+                            sendNotificationToUser(
+                              parentCommentUserId,
+                              'Có người trả lời bình luận của bạn',
+                              `Bình luận của bạn trong bài "${newsTitle}" vừa nhận được phản hồi mới`,
+                              JSON.parse(navigationData)  // Convert string back to object for data payload
+                            ).catch(pushErr => {
+                              console.error('Lỗi khi gửi push notification cho reply:', pushErr);
+                            });
                           }
                         }
                       );
@@ -285,7 +296,7 @@ router.post("/toggle", async (req, res) => {
             fromNotification: true  // Cờ cho biết đến từ thông báo
           }
         });
-        
+        console.log(navigationData);
         // Tạo thông báo
         await db.promise().query(
           `INSERT INTO notifications 
@@ -301,6 +312,69 @@ router.post("/toggle", async (req, res) => {
             navigationData
           ]
         );
+        
+        // Gửi push notification
+        try {
+          await sendNotificationToUser(
+            commentOwnerId,
+            'Có người thích bình luận của bạn',
+            `${user_name} đã thích bình luận "${commentContent}" của bạn trong bài "${newsTitle}"`,
+            JSON.parse(navigationData) // Convert string back to object for data payload
+          );
+        } catch (pushErr) {
+          console.error('Lỗi khi gửi push notification cho like:', pushErr);
+        }
+      }
+    }
+
+    // Gửi thông báo dislike nếu người dislike không phải là người viết comment
+    if (action === "dislike" && user_id !== commentOwnerId) {
+      // Kiểm tra cài đặt thông báo của người dùng (sử dụng comment_likes setting vì chưa có riêng cho dislike)
+      const [notificationSettings] = await db.promise().query(
+        "SELECT comment_likes FROM notification_settings WHERE user_id = ?",
+        [commentOwnerId]
+      );
+      
+      // Nếu người dùng cho phép nhận thông báo 
+      if (notificationSettings.length === 0 || notificationSettings[0].comment_likes) {
+        // Dữ liệu navigation JSON cho thông báo
+        const navigationData = JSON.stringify({
+          screen: 'Comments',
+          params: {
+            id: newsId,
+            title: newsTitle,
+            commentId: comment_id,
+            fromNotification: true
+          }
+        });
+        
+        // Tạo thông báo
+        await db.promise().query(
+          `INSERT INTO notifications 
+           (user_id, notification_type, title, message, related_entity_type, related_entity_id, is_read, navigation_data) 
+           VALUES (?, ?, ?, ?, ?, ?, false, ?)`,
+          [
+            commentOwnerId,
+            'COMMENT_DISLIKE',
+            'Có người không thích bình luận của bạn',
+            `${user_name} đã không thích bình luận "${commentContent}" của bạn trong bài "${newsTitle}"`,
+            'COMMENT',
+            comment_id,
+            navigationData
+          ]
+        );
+        
+        // Gửi push notification
+        try {
+          await sendNotificationToUser(
+            commentOwnerId,
+            'Có người không thích bình luận của bạn',
+            `${user_name} đã không thích bình luận "${commentContent}" của bạn trong bài "${newsTitle}"`,
+            JSON.parse(navigationData)
+          );
+        } catch (pushErr) {
+          console.error('Lỗi khi gửi push notification cho dislike:', pushErr);
+        }
       }
     }
 

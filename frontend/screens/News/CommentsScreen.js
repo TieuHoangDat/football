@@ -15,6 +15,64 @@ const CommentsScreen = ({ route }) => {
   const [sortBy, setSortBy] = useState("created_at"); // Mặc định sắp xếp theo thời gian
   const [flattenedComments, setFlattenedComments] = useState([]);
   const flatListRef = useRef(null);
+  const [newsInfo, setNewsInfo] = useState({
+    title: title || "",
+    image: image || "",
+    create_at: create_at || new Date().toISOString(),
+    comment_count: comment_count || 0
+  });
+
+  // Tải thông tin bài viết nếu chỉ có id được truyền vào (khi điều hướng từ thông báo)
+  const fetchNewsInfo = useCallback(() => {
+    if (id && fromNotification) {
+      console.log("Fetching news data for ID:", id);
+      fetch(`${API_URL}/news/${id}`)
+        .then((res) => res.json())
+        .then((data) => {
+          console.log("News data fetched:", data);
+          if (data) {
+            // Đảm bảo sử dụng đúng tên trường dữ liệu từ API
+            setNewsInfo({
+              title: data.title || title || "",
+              image: data.image_url || data.image || "",
+              create_at: data.created_at || data.create_at || new Date().toISOString(),
+              comment_count: data.comment_count || 0
+            });
+            console.log("Updated newsInfo:", {
+              title: data.title || title || "",
+              image: data.image_url || data.image || "",
+              create_at: data.created_at || data.create_at,
+              comment_count: data.comment_count
+            });
+          }
+        })
+        .catch((error) => {
+          console.error("Lỗi khi tải thông tin bài viết:", error);
+        });
+    }
+  }, [id, fromNotification, title]);
+
+  // Hàm format thời gian
+  const formatDate = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'Ngày không xác định';
+      }
+      return date.toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    } catch (error) {
+      console.error("Lỗi format ngày:", error, dateString);
+      return 'Ngày không xác định';
+    }
+  };
+
+  useEffect(() => {
+    fetchNewsInfo();
+  }, [fetchNewsInfo]);
 
   // Hàm làm phẳng cây comment thành danh sách 1 chiều để dễ tìm kiếm
   const flattenComments = useCallback((commentsTree) => {
@@ -46,9 +104,13 @@ const CommentsScreen = ({ route }) => {
         
         // Cuộn đến comment nếu có commentId và đến từ thông báo
         if (commentId && fromNotification && flatListRef.current) {
+          console.log("Chuẩn bị cuộn đến comment:", commentId);
+          console.log("Số lượng comment đã làm phẳng:", flattened.length);
+          
+          // Tăng thời gian chờ để đảm bảo FlatList đã render xong
           setTimeout(() => {
             scrollToComment(commentId, flattened);
-          }, 500); // Đợi chút để FlatList render xong
+          }, 1000); // Tăng thời gian chờ từ 500ms lên 1000ms
         }
       })
       .catch((error) => {
@@ -59,13 +121,31 @@ const CommentsScreen = ({ route }) => {
 
   // Hàm cuộn đến comment cụ thể
   const scrollToComment = (targetCommentId, flattened) => {
-    const index = flattened.findIndex(comment => comment.id === parseInt(targetCommentId));
+    console.log("Đang tìm comment với ID:", targetCommentId);
+    const targetId = parseInt(targetCommentId);
+    const index = flattened.findIndex(comment => comment.id === targetId);
+    
+    console.log("Vị trí của comment trong mảng:", index);
+    
     if (index !== -1 && flatListRef.current) {
-      flatListRef.current.scrollToIndex({ 
-        index, 
-        animated: true,
-        viewPosition: 0.5 // 0 là đầu, 0.5 là giữa, 1 là cuối
-      });
+      console.log("Đang cuộn đến vị trí:", index);
+      try {
+        flatListRef.current.scrollToIndex({ 
+          index, 
+          animated: true,
+          viewPosition: 0.3 // Điều chỉnh vị trí hiển thị (0 là đầu, 0.5 là giữa, 1 là cuối)
+        });
+      } catch (error) {
+        console.error("Lỗi khi cuộn:", error);
+        
+        // Phương pháp thay thế nếu scrollToIndex gặp lỗi
+        flatListRef.current.scrollToOffset({
+          offset: index * 100, // Ước lượng chiều cao trung bình của mỗi item
+          animated: true
+        });
+      }
+    } else {
+      console.log("Không tìm thấy comment hoặc flatListRef chưa sẵn sàng");
     }
   };
 
@@ -92,15 +172,26 @@ const CommentsScreen = ({ route }) => {
 
       {/* Hiển thị bài viết */}
       <View style={styles.newsContainer}>
-        <Image source={{ uri: `${API_URL}/uploads/news/${image}` }} style={styles.image} />
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.time}>Ngày đăng: {new Date(create_at).toLocaleDateString()}</Text>
+        <Image 
+          source={{ uri: newsInfo.image ? 
+            (newsInfo.image.includes('http') ? 
+              newsInfo.image : 
+              `${API_URL}/uploads/news/${newsInfo.image}`) 
+            : null 
+          }} 
+          style={styles.image}
+          onError={(e) => console.log("Lỗi tải ảnh:", e.nativeEvent.error)}
+        />
+        <Text style={styles.title}>{newsInfo.title || title}</Text>
+        <Text style={styles.time}>
+          Ngày đăng: {formatDate(newsInfo.create_at)}
+        </Text>
       </View>
 
       {/* Khu vực chọn sắp xếp */}
 
       <View style={styles.sortContainer}>
-        <Text style={styles.commentTitle}>{comment_count} bình luận</Text>
+        <Text style={styles.commentTitle}>{newsInfo.comment_count || comment_count || flattenedComments.length} bình luận</Text>
         <Text style={styles.sortText}>Sắp xếp theo</Text>
 
         <Picker
@@ -120,7 +211,14 @@ const CommentsScreen = ({ route }) => {
       <TouchableOpacity
         style={styles.addCommentButton}
         onPress={() =>
-          navigation.navigate("AddCommentScreen", { id, title, content, image, create_at, refresh: fetchComments })
+          navigation.navigate("AddCommentScreen", { 
+            id, 
+            title: newsInfo.title || title, 
+            content, 
+            image: newsInfo.image || image, 
+            create_at: newsInfo.create_at || create_at, 
+            refresh: fetchComments 
+          })
         }
       >
         <Text style={styles.addCommentText}>Viết bình luận ...</Text>
@@ -142,8 +240,17 @@ const CommentsScreen = ({ route }) => {
             />
           )}
           contentContainerStyle={styles.commentList}
+          onLayout={() => {
+            // Thử cuộn đến comment khi FlatList đã render xong layout
+            if (commentId && fromNotification) {
+              console.log("FlatList đã render xong layout, thử cuộn lại");
+              setTimeout(() => {
+                scrollToComment(commentId, flattenedComments);
+              }, 300);
+            }
+          }}
           onScrollToIndexFailed={(info) => {
-            console.warn('Không thể cuộn đến comment', info);
+            console.warn('Không thể cuộn đến comment:', info);
             // Fallback đến vị trí gần nhất
             setTimeout(() => {
               if (flatListRef.current) {

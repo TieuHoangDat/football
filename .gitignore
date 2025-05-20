@@ -1,1 +1,10 @@
-node_modules/
+/node_modules
+
+/frontend/node_modules
+/backend/node_modules
+
+/frontend/ios
+/frontend/android
+
+/frontend/data-nhung-firebase-adminsdk-fbsvc-9914c98ae8.json
+**/package-lock.json

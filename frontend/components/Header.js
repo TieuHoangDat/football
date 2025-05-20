@@ -2,17 +2,34 @@ import React from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity, Platform, StatusBar } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 
-const Header = () => {
+const Header = ({ title, showBackButton = false, hideSearch = false }) => {
   const navigation = useNavigation();
+
+  // Use the provided title or default to "Bóng đá"
+  const headerTitle = title || "Bóng đá";
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <Text style={styles.headerText}>Bóng đá</Text>
-        <TouchableOpacity onPress={() => navigation.navigate("Search")}>
-          <Image source={require("../assets/search-normal.png")} style={styles.icon} />
-        </TouchableOpacity>
+        {showBackButton ? (
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="white" />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.placeholder} />
+        )}
+
+        <Text style={styles.headerText}>{headerTitle}</Text>
+
+        <View style={styles.rightSection}>
+          {!hideSearch && (
+            <TouchableOpacity onPress={() => navigation.navigate("Search")}>
+              <Image source={require("../assets/search-normal.png")} style={styles.icon} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -20,26 +37,34 @@ const Header = () => {
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: "#000",
+    backgroundColor: "#181818",
   },
   header: {
-    backgroundColor: "#000",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    paddingVertical: 15,
+    paddingHorizontal: 15,
   },
   headerText: {
+    color: "white",
     fontSize: 18,
     fontWeight: "bold",
-    color: "#EEEEEE", 
   },
   icon: {
     width: 24,
     height: 24,
     tintColor: "#EEEEEE",
+  },
+  backButton: {
+    padding: 5,
+  },
+  rightSection: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  placeholder: {
+    width: 34, // Match the width of back button for symmetry
   },
 });
 

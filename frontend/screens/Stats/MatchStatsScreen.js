@@ -17,6 +17,7 @@ import {
 import { useNavigation, useRoute } from "@react-navigation/native";
 import Constants from "expo-constants";
 import { LinearGradient } from 'expo-linear-gradient';
+import Footer from "../../components/Footer";
 
 const API_URL = Constants.expoConfig.extra.apiUrl;
 const { width } = Dimensions.get('window');
@@ -25,7 +26,7 @@ const MatchStatsScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { match } = route.params;
-  
+  console.log(match);
   const [activeTab, setActiveTab] = useState('all');
   const [matchStats, setMatchStats] = useState(null);
   const [players, setPlayers] = useState([]);
@@ -494,28 +495,7 @@ const MatchStatsScreen = () => {
         </ScrollView>
       )}
       
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Home')}>
-          <Image source={require('../../assets/home.png')} style={styles.navIcon} />
-          <Text style={styles.navText}>Trang chủ</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Matches')}>
-          <Image source={require('../../assets/matches.png')} style={styles.navIcon} />
-          <Text style={styles.navText}>Trận đấu</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={[styles.navItem, styles.activeNavItem]}>
-          <Image source={require('../../assets/stats.png')} style={[styles.navIcon, styles.activeNavIcon]} />
-          <Text style={[styles.navText, styles.activeNavText]}>Thống kê</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Profile')}>
-          <Image source={require('../../assets/account.png')} style={styles.navIcon} />
-          <Text style={styles.navText}>Quản lý</Text>
-        </TouchableOpacity>
-      </View>
+      <Footer />
     </View>
   );
 };
@@ -691,50 +671,6 @@ const styles = StyleSheet.create({
   },
   loader: {
     marginTop: 50,
-  },
-  bottomNav: {
-    flexDirection: 'row',
-    backgroundColor: '#111',
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 60,
-    borderTopWidth: 1,
-    borderTopColor: '#333',
-    zIndex: 10,
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  navItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  activeNavItem: {
-    backgroundColor: '#1a1a1a',
-  },
-  navIcon: {
-    width: 24,
-    height: 24,
-    tintColor: '#aaa',
-    marginBottom: 4,
-  },
-  activeNavIcon: {
-    tintColor: '#fff',
-  },
-  navText: {
-    color: '#aaa',
-    fontSize: 10,
-  },
-  activeNavText: {
-    color: '#fff',
   },
   modalContainer: {
     flex: 1,
