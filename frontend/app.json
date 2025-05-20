@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Football News",
-    "slug": "football-news",
+    "name": "app3",
+    "slug": "app3",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,38 +12,20 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "notification": {
-      "icon": "./assets/notification-icon.png",
-      "color": "#ffffff",
-      "androidMode": "default",
-      "androidCollapsedTitle": "Football News"
-    },
-    "plugins": [
-    ],
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.footballnews.app",
-      "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
-      }
+      "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      },
-      "package": "com.footballnews.app",
-      "googleServicesFile": "./google-services.json"
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "apiUrl": "http://192.168.1.15:5001",
-      "eas": {
-        "projectId": "4fa29700-230e-4672-a27b-8da4079b498d"
-      }
-    },
-    "owner": "huyhuyhuy2003"
+      "apiUrl": "http://localhost:5001"
+    }
   }
 }

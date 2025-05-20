@@ -296,7 +296,7 @@ router.post("/toggle", async (req, res) => {
             fromNotification: true  // Cờ cho biết đến từ thông báo
           }
         });
-        
+        console.log(navigationData);
         // Tạo thông báo
         await db.promise().query(
           `INSERT INTO notifications 

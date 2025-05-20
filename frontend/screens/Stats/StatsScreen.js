@@ -41,11 +41,42 @@ const StatsScreen = () => {
   const [selectedCompetition, setSelectedCompetition] = useState(null);
   const [selectedSeason, setSelectedSeason] = useState(null);
   const [isFiltered, setIsFiltered] = useState(false);
+  
+  // Subscription states
+  const [subscriptionStatus, setSubscriptionStatus] = useState({});
+  const [subscribingMatch, setSubscribingMatch] = useState(null);
 
   useEffect(() => {
     fetchRecentMatches();
     fetchCompetitions();
     fetchSeasons();
+    
+    // Kiểm tra tất cả các keys trong AsyncStorage
+    const checkAllAsyncStorageKeys = async () => {
+      try {
+        const allKeys = await AsyncStorage.getAllKeys();
+        console.log("Tất cả các keys trong AsyncStorage:", allKeys);
+        
+        // In ra giá trị của các key có thể chứa token
+        const possibleTokenKeys = ['authToken', 'token', 'userToken', 'access_token', 'accessToken', 'jwt'];
+        for (const key of possibleTokenKeys) {
+          if (allKeys.includes(key)) {
+            const value = await AsyncStorage.getItem(key);
+            console.log(`Giá trị của ${key}:`, value ? value.substring(0, 15) + "..." : "null");
+          }
+        }
+        
+        // Kiểm tra userData
+        if (allKeys.includes('userData')) {
+          const userData = await AsyncStorage.getItem('userData');
+          console.log("userData:", userData ? JSON.parse(userData) : "null");
+        }
+      } catch (error) {
+        console.error("Lỗi khi kiểm tra AsyncStorage:", error);
+      }
+    };
+    
+    checkAllAsyncStorageKeys();
   }, []);
 
   useEffect(() => {
@@ -238,10 +269,250 @@ const StatsScreen = () => {
     navigation.navigate('MatchStats', { match });
   };
 
+  // Hàm trợ giúp để lấy token
+  const getAuthToken = async () => {
+    try {
+      // Sử dụng key chính xác là "token"
+      const token = await AsyncStorage.getItem('token');
+      if (token) {
+        console.log("Tìm thấy token");
+        return token;
+      }
+      
+      console.log("Không tìm thấy token trong storage");
+      return null;
+    } catch (error) {
+      console.error("Lỗi khi lấy token:", error);
+      return null;
+    }
+  };
+
+  // New function to check if user is logged in
+  const checkAuthStatus = async () => {
+    try {
+      const token = await getAuthToken();
+      const userData = await AsyncStorage.getItem('userData');
+      
+      // Kiểm tra cả token và dữ liệu người dùng
+      if (token) {
+        console.log("Người dùng đã đăng nhập với token");
+        return true;
+      }
+      
+      console.log("Không tìm thấy thông tin đăng nhập");
+      return false;
+    } catch (error) {
+      console.error("Lỗi khi kiểm tra trạng thái đăng nhập:", error);
+      return false;
+    }
+  };
+
+  // Thêm useEffect để kiểm tra người dùng đã đăng nhập khi component được tạo
+  useEffect(() => {
+    const checkUserLoggedIn = async () => {
+      const isLoggedIn = await checkAuthStatus();
+      console.log("Trạng thái đăng nhập:", isLoggedIn ? "Đã đăng nhập" : "Chưa đăng nhập");
+    };
+    
+    checkUserLoggedIn();
+  }, []);
+
+  // Kiểm tra trạng thái đăng ký cho một trận đấu cụ thể
+  const checkSubscriptionStatus = async (matchId) => {
+    try {
+      const token = await getAuthToken();
+      
+      if (!token) {
+        console.log("Không có token để kiểm tra trạng thái đăng ký");
+        return false;
+      }
+
+      console.log("Kiểm tra trạng thái đăng ký cho trận đấu:", matchId);
+      const response = await fetch(`${API_URL}/matches/${matchId}/subscribe/status`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Lỗi: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log("Kết quả kiểm tra đăng ký:", data);
+      return data.is_subscribed;
+    } catch (error) {
+      console.error(`Lỗi khi kiểm tra trạng thái đăng ký của trận đấu ${matchId}:`, error);
+      return false;
+    }
+  };
+
+  // New function to check subscription status for all upcoming matches
+  const checkAllSubscriptionStatus = async (matches) => {
+    try {
+      const upcomingMatches = matches.filter(match => match.status !== 'finished' && match.status !== 'live');
+      
+      if (upcomingMatches.length === 0) {
+        console.log("Không có trận đấu sắp diễn ra để kiểm tra đăng ký");
+        return;
+      }
+      
+      const token = await getAuthToken();
+      if (!token) {
+        console.log("Không có token để kiểm tra trạng thái đăng ký");
+        return;
+      }
+      
+      console.log(`Kiểm tra trạng thái đăng ký cho ${upcomingMatches.length} trận đấu sắp diễn ra`);
+      
+      // Thực hiện tất cả các yêu cầu cùng lúc để tăng hiệu suất
+      const checkPromises = upcomingMatches.map(match => {
+        return fetch(`${API_URL}/matches/${match.id}/subscribe/status`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Lỗi: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(data => ({ matchId: match.id, isSubscribed: data.is_subscribed }))
+        .catch(error => {
+          console.error(`Lỗi khi kiểm tra trạng thái đăng ký của trận đấu ${match.id}:`, error);
+          return { matchId: match.id, isSubscribed: false };
+        });
+      });
+      
+      const results = await Promise.all(checkPromises);
+      const statuses = { ...subscriptionStatus };
+      
+      results.forEach(result => {
+        statuses[result.matchId] = result.isSubscribed;
+      });
+      
+      console.log("Kết quả kiểm tra trạng thái đăng ký:", statuses);
+      setSubscriptionStatus(statuses);
+    } catch (error) {
+      console.error("Lỗi khi kiểm tra trạng thái đăng ký cho nhiều trận đấu:", error);
+    }
+  };
+
+  // Update useEffect to check subscription statuses when matches are loaded
+  useEffect(() => {
+    if (recentMatches.length > 0) {
+      checkAllSubscriptionStatus(recentMatches);
+    }
+  }, [recentMatches]);
+
+  // New function to handle subscription
+  const handleSubscribe = async (matchId) => {
+    try {
+      setSubscribingMatch(matchId);
+      
+      const token = await getAuthToken();
+      
+      if (!token) {
+        Alert.alert(
+          "Yêu cầu đăng nhập", 
+          "Vui lòng đăng nhập để đăng ký theo dõi trận đấu này", 
+          [
+            { text: "Hủy", style: "cancel" },
+            { text: "Đăng nhập", onPress: () => navigation.navigate('Login') }
+          ]
+        );
+        setSubscribingMatch(null);
+        return;
+      }
+
+      console.log("Đang đăng ký theo dõi trận đấu:", matchId);
+      const response = await fetch(`${API_URL}/matches/${matchId}/subscribe`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || `Lỗi: ${response.status}`);
+      }
+      
+      console.log("Đăng ký thành công:", data);
+      setSubscriptionStatus(prev => ({
+        ...prev,
+        [matchId]: true
+      }));
+      
+      Alert.alert("Thành công", "Đã đăng ký nhận thông báo cho trận đấu này");
+    } catch (error) {
+      console.error(`Lỗi khi đăng ký theo dõi trận đấu ${matchId}:`, error);
+      
+      // Kiểm tra nếu lỗi là unauthorized (401), hướng dẫn đăng nhập
+      if (error.message.includes("401")) {
+        Alert.alert(
+          "Phiên đăng nhập hết hạn", 
+          "Vui lòng đăng nhập lại để tiếp tục", 
+          [
+            { text: "Hủy", style: "cancel" },
+            { text: "Đăng nhập", onPress: () => navigation.navigate('Login') }
+          ]
+        );
+      } else {
+        Alert.alert("Lỗi", error.message || "Không thể đăng ký theo dõi trận đấu. Vui lòng thử lại sau.");
+      }
+    } finally {
+      setSubscribingMatch(null);
+    }
+  };
+
+  // New function to handle unsubscription
+  const handleUnsubscribe = async (matchId) => {
+    try {
+      setSubscribingMatch(matchId);
+      const token = await getAuthToken();
+      
+      if (!token) {
+        Alert.alert("Lỗi", "Không tìm thấy thông tin đăng nhập. Vui lòng đăng nhập lại.");
+        setSubscribingMatch(null);
+        return;
+      }
+      
+      const response = await fetch(`${API_URL}/matches/${matchId}/subscribe`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || `Lỗi: ${response.status}`);
+      }
+      
+      setSubscriptionStatus(prev => ({
+        ...prev,
+        [matchId]: false
+      }));
+      
+      Alert.alert("Thành công", "Đã hủy đăng ký nhận thông báo cho trận đấu này");
+    } catch (error) {
+      console.error(`Lỗi khi hủy đăng ký theo dõi trận đấu ${matchId}:`, error);
+      Alert.alert("Lỗi", error.message || "Không thể hủy đăng ký theo dõi trận đấu. Vui lòng thử lại sau.");
+    } finally {
+      setSubscribingMatch(null);
+    }
+  };
+
   const renderMatchItem = ({ item }) => {
     // Định dạng ngày tháng
     const matchDate = new Date(item.match_date);
     const formattedDate = `${matchDate.getDate()}/${matchDate.getMonth() + 1}/${matchDate.getFullYear()}`;
+    
+    const isUpcoming = item.status !== 'finished' && item.status !== 'live';
+    const isSubscribed = subscriptionStatus[item.id] || false;
     
     return (
       <TouchableOpacity 
@@ -280,6 +551,26 @@ const StatsScreen = () => {
             <Text style={styles.teamName}>{item.away_team_name}</Text>
           </View>
         </View>
+        
+        {isUpcoming && (
+          <View style={styles.subscribeContainer}>
+            {subscribingMatch === item.id ? (
+              <ActivityIndicator size="small" color="#4CAF50" />
+            ) : (
+              <TouchableOpacity
+                style={[
+                  styles.subscribeButton,
+                  isSubscribed ? styles.unsubscribeButton : {}
+                ]}
+                onPress={() => isSubscribed ? handleUnsubscribe(item.id) : handleSubscribe(item.id)}
+              >
+                <Text style={styles.subscribeButtonText}>
+                  {isSubscribed ? 'Hủy đăng ký' : 'Đăng ký theo dõi'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       </TouchableOpacity>
     );
   };
@@ -1265,6 +1556,30 @@ const styles = StyleSheet.create({
   resetButtonText: {
     color: "#ccc",
     fontWeight: "bold",
+  },
+  subscribeContainer: {
+    marginTop: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 5,
+    borderTopWidth: 1,
+    borderTopColor: '#444',
+  },
+  subscribeButton: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 20,
+    minWidth: 150,
+    alignItems: 'center',
+  },
+  unsubscribeButton: {
+    backgroundColor: '#FF5722',
+  },
+  subscribeButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
 });
 

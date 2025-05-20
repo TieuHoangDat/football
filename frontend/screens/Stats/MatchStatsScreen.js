@@ -26,7 +26,7 @@ const MatchStatsScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { match } = route.params;
-  
+  console.log(match);
   const [activeTab, setActiveTab] = useState('all');
   const [matchStats, setMatchStats] = useState(null);
   const [players, setPlayers] = useState([]);
