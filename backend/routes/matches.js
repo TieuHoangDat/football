@@ -1,5 +1,6 @@
 const express = require("express");
 const db = require("../config/db");
+const authMiddleware = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
@@ -715,34 +716,254 @@ router.put("/:matchId", (req, res) => {
         });
     }
 
-    const query = `
-        UPDATE matches 
-        SET home_score = ?, away_score = ?, status = ?
-        WHERE id = ?
-    `;
-
-    db.query(
-        query,
-        [home_score, away_score, status, matchId],
-        (err, result) => {
-            if (err) {
-                console.error("Lỗi cập nhật kết quả trận đấu:", err);
-                return res.status(500).json({
-                    message: "Không thể cập nhật kết quả trận đấu",
-                });
-            }
-
-            if (result.affectedRows === 0) {
-                return res.status(404).json({
-                    message: "Không tìm thấy trận đấu",
-                });
-            }
-
-            res.json({
-                message: "Cập nhật kết quả trận đấu thành công",
+    // Lấy thông tin trận đấu hiện tại để kiểm tra trạng thái trước khi cập nhật
+    const getMatchQuery = `SELECT status FROM matches WHERE id = ?`;
+    db.query(getMatchQuery, [matchId], (err, matchResults) => {
+        if (err) {
+            console.error("Lỗi khi lấy thông tin trận đấu:", err);
+            return res.status(500).json({
+                message: "Không thể lấy thông tin trận đấu",
             });
         }
-    );
+
+        if (matchResults.length === 0) {
+            return res.status(404).json({
+                message: "Không tìm thấy trận đấu",
+            });
+        }
+
+        const oldStatus = matchResults[0].status;
+        const statusChanged = oldStatus !== status;
+
+        // Cập nhật trận đấu
+        const updateQuery = `
+            UPDATE matches 
+            SET home_score = ?, away_score = ?, status = ?
+            WHERE id = ?
+        `;
+
+        db.query(
+            updateQuery,
+            [home_score, away_score, status, matchId],
+            (err, result) => {
+                if (err) {
+                    console.error("Lỗi cập nhật kết quả trận đấu:", err);
+                    return res.status(500).json({
+                        message: "Không thể cập nhật kết quả trận đấu",
+                    });
+                }
+
+                if (result.affectedRows === 0) {
+                    return res.status(404).json({
+                        message: "Không tìm thấy trận đấu",
+                    });
+                }
+
+                // Gửi thông báo nếu trạng thái trận đấu thay đổi
+                if (statusChanged) {
+                    // Import các hàm gửi thông báo
+                    const { 
+                        sendMatchStartNotification, 
+                        sendMatchEndNotification 
+                    } = require('../utils/matchNotifier');
+
+                    // Nếu trạng thái mới là "live" (đang diễn ra), gửi thông báo bắt đầu
+                    if (status === 'live' && oldStatus === 'scheduled') {
+                        console.log(`Gửi thông báo bắt đầu cho trận đấu ${matchId}`);
+                        sendMatchStartNotification(matchId);
+                    }
+                    // Nếu trạng thái mới là "finished" (kết thúc), gửi thông báo kết thúc
+                    else if (status === 'finished' && (oldStatus === 'live' || oldStatus === 'scheduled')) {
+                        console.log(`Gửi thông báo kết thúc cho trận đấu ${matchId}`);
+                        sendMatchEndNotification(matchId);
+                    }
+                }
+
+                res.json({
+                    message: "Cập nhật kết quả trận đấu thành công",
+                    notification_sent: statusChanged
+                });
+            }
+        );
+    });
+});
+
+/**
+ * API đăng ký theo dõi trận đấu
+ * Lưu thông tin đăng ký theo dõi của người dùng với trận đấu cụ thể
+ */
+router.post("/:matchId/subscribe", authMiddleware, (req, res) => {
+  const { matchId } = req.params;
+  const userId = req.user.id;
+
+  // Kiểm tra xem trận đấu có tồn tại không
+  const matchCheckQuery = `SELECT id, status FROM matches WHERE id = ?`;
+  db.query(matchCheckQuery, [matchId], (err, matchResults) => {
+    if (err) {
+      console.error("Lỗi kiểm tra trận đấu:", err);
+      return res.status(500).json({
+        error: "Lỗi khi kiểm tra trận đấu",
+      });
+    }
+
+    if (matchResults.length === 0) {
+      return res.status(404).json({
+        message: "Không tìm thấy trận đấu",
+      });
+    }
+
+    // Chỉ cho phép đăng ký với trận đấu chưa diễn ra
+    if (matchResults[0].status !== 'scheduled') {
+      return res.status(400).json({
+        message: "Chỉ có thể đăng ký theo dõi trận đấu chưa diễn ra",
+      });
+    }
+
+    // Kiểm tra xem người dùng đã đăng ký theo dõi trận đấu này chưa
+    const checkSubscriptionQuery = `
+      SELECT * FROM user_subscriptions 
+      WHERE user_id = ? AND subscription_type = 'MATCH' AND entity_id = ?
+    `;
+    
+    db.query(checkSubscriptionQuery, [userId, matchId], (err, subscriptionResults) => {
+      if (err) {
+        console.error("Lỗi kiểm tra đăng ký:", err);
+        return res.status(500).json({
+          error: "Lỗi khi kiểm tra đăng ký",
+        });
+      }
+
+      if (subscriptionResults.length > 0) {
+        return res.status(400).json({
+          message: "Bạn đã đăng ký theo dõi trận đấu này",
+        });
+      }
+
+      // Thêm đăng ký mới
+      const insertSubscriptionQuery = `
+        INSERT INTO user_subscriptions (user_id, subscription_type, entity_id)
+        VALUES (?, 'MATCH', ?)
+      `;
+      
+      db.query(insertSubscriptionQuery, [userId, matchId], (err, insertResult) => {
+        if (err) {
+          console.error("Lỗi đăng ký theo dõi trận đấu:", err);
+          return res.status(500).json({
+            error: "Lỗi khi đăng ký theo dõi trận đấu",
+          });
+        }
+
+        return res.status(201).json({
+          message: "Đăng ký theo dõi trận đấu thành công",
+          subscription_id: insertResult.insertId
+        });
+      });
+    });
+  });
+});
+
+/**
+ * API hủy đăng ký theo dõi trận đấu
+ * Xóa thông tin đăng ký theo dõi của người dùng với trận đấu cụ thể
+ */
+router.delete("/:matchId/subscribe", authMiddleware, (req, res) => {
+  const { matchId } = req.params;
+  const userId = req.user.id;
+
+  // Xóa đăng ký theo dõi
+  const deleteSubscriptionQuery = `
+    DELETE FROM user_subscriptions 
+    WHERE user_id = ? AND subscription_type = 'MATCH' AND entity_id = ?
+  `;
+  
+  db.query(deleteSubscriptionQuery, [userId, matchId], (err, deleteResult) => {
+    if (err) {
+      console.error("Lỗi hủy đăng ký theo dõi trận đấu:", err);
+      return res.status(500).json({
+        error: "Lỗi khi hủy đăng ký theo dõi trận đấu",
+      });
+    }
+
+    if (deleteResult.affectedRows === 0) {
+      return res.status(404).json({
+        message: "Không tìm thấy đăng ký theo dõi trận đấu",
+      });
+    }
+
+    return res.json({
+      message: "Hủy đăng ký theo dõi trận đấu thành công",
+    });
+  });
+});
+
+/**
+ * API kiểm tra đăng ký theo dõi trận đấu
+ * Kiểm tra xem người dùng đã đăng ký theo dõi trận đấu hay chưa
+ */
+router.get("/:matchId/subscribe/status", authMiddleware, (req, res) => {
+  const { matchId } = req.params;
+  const userId = req.user.id;
+
+  // Kiểm tra đăng ký theo dõi
+  const checkSubscriptionQuery = `
+    SELECT * FROM user_subscriptions 
+    WHERE user_id = ? AND subscription_type = 'MATCH' AND entity_id = ?
+  `;
+  
+  db.query(checkSubscriptionQuery, [userId, matchId], (err, subscriptionResults) => {
+    if (err) {
+      console.error("Lỗi kiểm tra đăng ký theo dõi:", err);
+      return res.status(500).json({
+        error: "Lỗi khi kiểm tra đăng ký theo dõi",
+      });
+    }
+
+    const isSubscribed = subscriptionResults.length > 0;
+    
+    return res.json({
+      is_subscribed: isSubscribed,
+      subscription_id: isSubscribed ? subscriptionResults[0].id : null
+    });
+  });
+});
+
+/**
+ * API gửi thông báo trận đấu thủ công (chỉ dành cho admin để test)
+ */
+router.post("/:matchId/notify", authMiddleware, (req, res) => {
+  const { matchId } = req.params;
+  const { type } = req.query; // type có thể là: reminder, start, end
+
+  // Kiểm tra quyền admin (comment lại để test)
+  // if (req.user.role !== 'admin') {
+  //   return res.status(403).json({ message: "Không có quyền truy cập" });
+  // }
+
+  // Import matchNotifier
+  const { 
+    sendMatchReminderNotification, 
+    sendMatchStartNotification,
+    sendMatchEndNotification
+  } = require('../utils/matchNotifier');
+
+  // Gửi thông báo theo loại
+  try {
+    if (type === 'reminder') {
+      sendMatchReminderNotification(matchId);
+      return res.json({ message: "Đã gửi thông báo nhắc nhở trận đấu" });
+    } else if (type === 'start') {
+      sendMatchStartNotification(matchId);
+      return res.json({ message: "Đã gửi thông báo bắt đầu trận đấu" });
+    } else if (type === 'end') {
+      sendMatchEndNotification(matchId);
+      return res.json({ message: "Đã gửi thông báo kết thúc trận đấu" });
+    } else {
+      return res.status(400).json({ message: "Loại thông báo không hợp lệ. Sử dụng 'reminder', 'start', hoặc 'end'" });
+    }
+  } catch (error) {
+    console.error("Lỗi khi gửi thông báo:", error);
+    return res.status(500).json({ message: "Lỗi khi gửi thông báo" });
+  }
 });
 
 module.exports = router;
